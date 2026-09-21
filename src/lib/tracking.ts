@@ -1,0 +1,73 @@
+import type { Device, HandoffPhase, Room } from '@/domain/types'
+
+/** 房间是否拥有某类型的在线设备 */
+export function roomHasDevice(devices: Device[], roomId: string, type: Device['type']): boolean {
+  return devices.some((d) => d.roomId === roomId && d.type === type && d.online)
+}
+
+export function roomDevices(devices: Device[], roomId: string): Device[] {
+  return devices.filter((d) => d.roomId === roomId)
+}
+
+export function camerasOf(devices: Device[]): Device[] {
+  return devices.filter((d) => d.type === 'camera' && d.online)
+}
+
+/** 接力阶段 → 人类可读文案 */
+export function handoffMessage(
+  phase: HandoffPhase,
+  fromRoom?: Room,
+  toRoom?: Room,
+  hasCamera = true,
+): string {
+  const from = fromRoom?.name ?? 'A 房间'
+  const to = toRoom?.name ?? 'B 房间'
+  switch (phase) {
+    case 'lost':
+      return `${from}摄像头已失去目标`
+    case 'transit':
+      return `项圈 BLE / IMU 正在保持连续定位`
+    case 'searching':
+      return `正在寻找${to}房间摄像头…`
+    case 'detected':
+      return `${to}摄像头已识别，画面与位置重新对齐`
+    case 'completed':
+      return `接力完成：已自动切换至${to}摄像头`
+    case 'no_camera':
+      return `当前位置仍确认在${to}；该房间暂无直接摄像头，BLE/IMU 继续追踪`
+    default:
+      return hasCamera ? `${to}摄像头持续识别` : `项圈 BLE 持续定位`
+  }
+}
+
+/** 追踪来源标签 */
+export function trackingSourceLabel(sources: string[]): string {
+  const has = (s: string) => sources.includes(s)
+  if (has('camera') && has('ble')) return '视觉 + BLE'
+  if (has('ble') && has('imu')) return 'BLE + IMU'
+  if (has('camera')) return '视觉'
+  if (has('ble')) return 'BLE'
+  return '连续定位'
+}
+
+export const behaviorLabel: Record<string, string> = {
+  idle: '静止',
+  looking: '摇头 / 张望',
+  running: '奔跑',
+  sleeping: '睡觉',
+  eating: '进食',
+  drinking: '喝水',
+  playing: '玩耍',
+  litter: '如厕 / 停留',
+}
+
+export const behaviorMeta: Record<string, string> = {
+  sleeping: '姿态稳定 · 正在休息',
+  idle: '当前位置稳定',
+  looking: '正在观察周围',
+  running: '活动增强 · 连续跑动',
+  eating: '喂食器事件 · 本次约 18g',
+  drinking: '饮水事件进行中',
+  playing: '活跃度正常 · 玩耍中',
+  litter: '区域停留中',
+}

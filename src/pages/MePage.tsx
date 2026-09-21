@@ -1,0 +1,89 @@
+import { useStore } from '@/store/useStore'
+import { ensureNotificationPermission, notificationPermission, notificationsSupported } from '@/lib/notify'
+import { pushSupported, sendTestPush } from '@/lib/push'
+
+const ITEMS: { ico: string; title: string; desc: string; modal: any; link: string }[] = [
+  { ico: '⌗', title: '家庭地图', desc: '上传户型、手绘或扫描，并绑定各房间设备。', modal: 'mapBuilder', link: '管理地图 →' },
+  { ico: '◎', title: '虚拟栅栏', desc: '设置安全区域，离开范围时接收逃生警报。', modal: 'fence', link: '安全区域 →' },
+  { ico: '⚑', title: '走失互寻', desc: '共享定位、发布寻宠动态并提醒附近会员。', modal: 'lost', link: '走失模式 →' },
+  { ico: '◖', title: '主人声音', desc: '录制声线并在音箱 / 智能屏远程播放。', modal: 'voice', link: '声音调教 →' },
+  { ico: '◌', title: '宠物对话框', desc: '用消息流承载找主人、语音、行为与互动事件。', modal: 'chat', link: '打开对话 →' },
+  { ico: '♡', title: '毛茸茸好友', desc: '添加附近宠友，并可向对方主人发起联系。', modal: 'friends', link: '附近好友 →' },
+  { ico: '⌁', title: '全屋自动联动', desc: '配置温湿度、摄像头接力与互动触发规则。', modal: 'automation', link: '管理规则 →' },
+  { ico: '▦', title: '设备管理', desc: '摄像头、音箱、屏幕、喂食器和空调绑定状态。', modal: 'device', link: '查看设备 →' },
+]
+
+export function MePage() {
+  const openModal = useStore((s) => s.openModal)
+  const pet = useStore((s) => s.pet)
+  const resetDemo = useStore((s) => s.resetDemo)
+  const toast = useStore((s) => s.toast)
+
+  const enableNotify = async () => {
+    if (!notificationsSupported()) return toast('warn', '当前浏览器不支持通知')
+    const ok = await ensureNotificationPermission()
+    toast(ok ? 'success' : 'warn', ok ? '已开启通知：走失/铃铛/陪伴提醒会推送' : '通知未授权，可在浏览器设置中开启')
+  }
+
+  const testPush = async () => {
+    if (!pushSupported()) return toast('warn', '当前环境不支持 Web Push（需 https 部署 + 已安装/支持的浏览器）')
+    const ok = await ensureNotificationPermission()
+    if (!ok) return toast('warn', '请先授权通知')
+    try {
+      const sent = await sendTestPush({ title: 'PetLink 测试推送', body: '这是一条来自服务器的真实推送 🐾', url: '/' })
+      toast(sent ? 'success' : 'error', sent ? '已请求服务器推送，稍候将收到系统通知' : '推送发送失败（服务端未配置或网络问题）')
+    } catch {
+      toast('error', '推送请求失败')
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-end justify-between">
+        <div>
+          <div className="eyebrow">MY PETLINK</div>
+          <h2 className="my-1 text-3xl font-extrabold">我的</h2>
+          <div className="text-sm text-muted">家庭地图、守护、安全与社交能力设置。</div>
+        </div>
+        <span className="badge">{pet.name} · 在线</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3.5 max-[900px]:grid-cols-2 max-[640px]:grid-cols-1">
+        {ITEMS.map((it) => (
+          <button key={it.title} onClick={() => openModal(it.modal)} className="min-h-[150px] rounded-2xl border border-line bg-white p-5 text-left shadow-softsm transition hover:-translate-y-0.5">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-teal-soft text-xl text-teal">{it.ico}</div>
+            <h4 className="my-3 text-base font-bold">{it.title}</h4>
+            <p className="min-h-[38px] text-xs leading-relaxed text-muted">{it.desc}</p>
+            <span className="text-xs font-bold text-teal">{it.link}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="card mt-5 flex items-center justify-between">
+        <div>
+          <b className="text-sm">通知与安装</b>
+          <p className="mt-1 text-xs text-muted">开启通知后，走失告警 / 找主人铃铛 / 陪伴提醒会推送到系统通知栏。在浏览器菜单选择“添加到主屏幕 / 安装应用”即可把 PetLink 装到桌面。</p>
+        </div>
+        <button className="btn btn-primary" data-testid="enable-notify" onClick={enableNotify}>
+          {notificationPermission() === 'granted' ? '通知已开启' : '开启通知'}
+        </button>
+      </div>
+
+      <div className="card mt-4 flex items-center justify-between">
+        <div>
+          <b className="text-sm">服务器推送（Web Push）</b>
+          <p className="mt-1 text-xs text-muted">通过 VAPID 从服务器主动推送，应用切到后台/关闭也能收到。点击可发送一条真实测试推送。</p>
+        </div>
+        <button className="btn" data-testid="test-push" onClick={testPush}>发送测试推送</button>
+      </div>
+
+      <div className="card mt-4 flex items-center justify-between">
+        <div>
+          <b className="text-sm">数据与演示</b>
+          <p className="mt-1 text-xs text-muted">所有编辑（户型/设备/规则/围栏/语音）已持久化到本地。可一键恢复演示数据。</p>
+        </div>
+        <button className="btn btn-red" data-testid="reset-demo" onClick={() => { if (confirm('确定恢复演示数据？当前所有本地编辑将被重置。')) resetDemo() }}>恢复演示数据</button>
+      </div>
+    </div>
+  )
+}

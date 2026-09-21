@@ -1,0 +1,170 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #e8efeb 0%, #f7f7f3 45%, #e8efeb 100%);
+  color: #20322f;
+}
+
+@layer components {
+  .card {
+    @apply bg-white/95 border border-line rounded-3xl p-5 shadow-softsm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl px-3 py-2.5 text-xs font-bold bg-[#edf2ef] text-[#5d6e68] transition disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn:hover {
+    @apply brightness-[.98];
+  }
+  .btn-primary {
+    @apply bg-teal text-white;
+  }
+  .btn-red {
+    @apply bg-red text-white;
+  }
+  .btn-ghost {
+    @apply bg-transparent border border-line;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 bg-teal-soft text-teal text-[10px] font-extrabold;
+  }
+  .badge-warn {
+    @apply bg-orange-soft text-orange;
+  }
+  .badge-red {
+    @apply bg-red-soft text-red;
+  }
+  .field {
+    @apply w-full border border-line bg-white rounded-xl px-3 py-2.5 text-ink text-sm outline-none focus:border-teal-2;
+  }
+  .eyebrow {
+    @apply text-[11px] tracking-[2px] font-extrabold text-[#95a39f] uppercase;
+  }
+}
+
+.toggle {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #d7dfdb;
+  position: relative;
+  flex: none;
+  transition: 0.2s;
+}
+.toggle::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+.toggle.on {
+  background: #4ca092;
+}
+.toggle.on::after {
+  left: 19px;
+}
+
+.pet-run {
+  animation: runbob 0.35s infinite alternate;
+}
+.pet-look {
+  animation: lookbob 0.75s infinite alternate;
+}
+.pet-sleep {
+  animation: breathe 1.6s infinite ease-in-out;
+}
+@keyframes runbob {
+  from {
+    transform: translate(-50%, -54%);
+  }
+  to {
+    transform: translate(-50%, -46%);
+  }
+}
+@keyframes lookbob {
+  from {
+    rotate: -3deg;
+  }
+  to {
+    rotate: 3deg;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 0.97;
+  }
+}
+@keyframes routeDash {
+  to {
+    stroke-dashoffset: -21;
+  }
+}
+.transition-route {
+  fill: none;
+  stroke: #4ca092;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 11 10;
+  opacity: 0.75;
+  animation: routeDash 1s linear infinite;
+}
+.history-route {
+  fill: none;
+  stroke: #df9e64;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 12 10;
+  opacity: 0.78;
+}
+.scan-line {
+  animation: scanmove 2s infinite linear;
+}
+@keyframes scanmove {
+  from {
+    top: 14%;
+  }
+  to {
+    top: 86%;
+  }
+}
+.animate-pop {
+  animation: pop 0.2s ease;
+}
+@keyframes pop {
+  from {
+    transform: translateY(-7px);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

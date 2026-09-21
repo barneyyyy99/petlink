@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>宠物陪伴 · 家庭地图 Avatar 原型</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="phone">
+    <!-- 状态栏 -->
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="dots"><span>📶</span><span>🛜</span><span>🔋</span></span>
+    </div>
+
+    <!-- 屏幕区 -->
+    <div class="screens" id="screens">
+      <!-- 主 Tab -->
+      <section class="screen active" data-screen="home" id="screen-home"></section>
+      <section class="screen" data-screen="map" id="screen-map"></section>
+      <section class="screen" data-screen="records" id="screen-records"></section>
+      <section class="screen" data-screen="mine" id="screen-mine"></section>
+
+      <!-- 二级页面 -->
+      <section class="screen" data-screen="build" id="screen-build"></section>
+      <section class="screen" data-screen="build-flow" id="screen-build-flow"></section>
+      <section class="screen" data-screen="devices" id="screen-devices"></section>
+      <section class="screen" data-screen="camera" id="screen-camera"></section>
+      <section class="screen" data-screen="video" id="screen-video"></section>
+      <section class="screen" data-screen="voice" id="screen-voice"></section>
+      <section class="screen" data-screen="feed" id="screen-feed"></section>
+      <section class="screen" data-screen="automation" id="screen-automation"></section>
+      <section class="screen" data-screen="track" id="screen-track"></section>
+      <section class="screen" data-screen="behavior" id="screen-behavior"></section>
+      <section class="screen" data-screen="sound" id="screen-sound"></section>
+      <section class="screen" data-screen="diary" id="screen-diary"></section>
+      <section class="screen" data-screen="fence" id="screen-fence"></section>
+      <section class="screen" data-screen="lost" id="screen-lost"></section>
+      <section class="screen" data-screen="chat" id="screen-chat"></section>
+      <section class="screen" data-screen="friends" id="screen-friends"></section>
+    </div>
+
+    <!-- 控制台悬浮按钮 -->
+    <button class="console-fab" id="consoleFab" title="模拟控制台">🎛️</button>
+
+    <!-- 底部 Tab -->
+    <nav class="tabbar" id="tabbar">
+      <button class="tab active" data-tab="home"><span class="ico">🏠</span>首页</button>
+      <button class="tab" data-tab="map"><span class="ico">🗺️</span>地图</button>
+      <button class="tab" data-tab="records"><span class="ico">📖</span>记录</button>
+      <button class="tab" data-tab="mine"><span class="ico">👤</span>我的</button>
+    </nav>
+
+    <!-- 弹层基础设施 -->
+    <div class="overlay" id="overlay"></div>
+    <div class="sheet" id="sheet"><div class="grip"></div><div id="sheetBody"></div></div>
+    <div class="modal" id="modal"><div id="modalBody"></div></div>
+    <div class="toast-wrap" id="toastWrap"></div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/build.js"></script>
+  <script src="js/records.js"></script>
+  <script src="js/console.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

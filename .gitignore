@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+playwright-report
+test-results
+.vercel
+.comate
+
+# 环境变量：忽略真实密钥，但保留示例模板
+.env
+.env.*
+!.env.example
