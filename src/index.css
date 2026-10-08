@@ -193,6 +193,18 @@ body {
     opacity: 1;
   }
 }
+/* 仅淡入（不改 transform），用于自带定位 transform 的浮层，避免入场时位移错位 */
+.animate-fade {
+  animation: fadein 0.18s ease;
+}
+@keyframes fadein {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

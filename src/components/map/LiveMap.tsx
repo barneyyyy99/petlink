@@ -7,6 +7,7 @@ import { DeviceGlyph } from './DeviceGlyph'
 import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, roomDevices } from '@/lib/tracking'
 import { relativeTime } from '@/lib/time'
+import { ambianceFor } from '@/lib/ambiance'
 import type { Point, PetBehavior } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
@@ -119,7 +120,6 @@ export function LiveMap() {
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
   const openCamera = useStore((s) => s.openCamera)
   const sendCommand = useStore((s) => s.sendCommand)
-  const toast = useStore((s) => s.toast)
   const [popover, setPopover] = useState<string | null>(null)
   const [wander, setWander] = useState<Record<string, { x: number; y: number }>>({})
 
@@ -142,6 +142,8 @@ export function LiveMap() {
   }, [pets, transition])
 
   const petRoomIds = new Set(pets.map((p) => p.roomId))
+  // 昼夜光照氛围：随本地时间变化（清晨/白天/傍晚/夜间）
+  const amb = ambianceFor(new Date().getHours())
   // 历史轨迹：按 room_change 事件顺序（时间升序）取房间质心
   const historyPts =
     mapMode === 'history'
@@ -155,13 +157,23 @@ export function LiveMap() {
 
   return (
     <div className="relative mx-auto aspect-[5/3] max-h-full w-full overflow-hidden rounded-[28px] border border-line bg-[#fafcf9] shadow-soft">
-      <div className="absolute inset-5 overflow-hidden rounded-[22px] border border-[#e2e9e4] bg-[#f4f7f3]">
+      <div
+        className="absolute inset-5 overflow-hidden rounded-[22px] border border-[#e2e9e4]"
+        style={{ background: amb.bg, transition: 'background 1.2s ease' }}
+      >
         <svg
           className="absolute inset-0 h-full w-full"
           viewBox={`0 0 ${MAP_W} ${MAP_H}`}
           preserveAspectRatio="none"
           data-testid="live-map-svg"
         >
+          <defs>
+            <radialGradient id="roomGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor={amb.glow} stopOpacity={amb.glowOpacity} />
+              <stop offset="62%" stopColor={amb.glow} stopOpacity={amb.glowOpacity * 0.32} />
+              <stop offset="100%" stopColor={amb.glow} stopOpacity={0} />
+            </radialGradient>
+          </defs>
           {/* 历史轨迹 */}
           {historyPts.length > 1 && (
             <>
@@ -186,17 +198,14 @@ export function LiveMap() {
               <g key={r.id}>
                 {/* 墙体（底层较深描边） */}
                 <polygon points={poly(r.polygon)} fill={floor} stroke="#7f9289" strokeWidth={9} strokeLinejoin="round" style={{ vectorEffect: 'non-scaling-stroke' }} />
-                {/* 地板（上层浅描边 + 可点击） */}
+                {/* 地板（上层浅描边） */}
                 <polygon
                   points={poly(r.polygon)}
                   fill={floor}
                   stroke={active ? '#8fc3b4' : WALL}
                   strokeWidth={active ? 4 : 2.5}
                   strokeLinejoin="round"
-                  style={{ cursor: 'pointer', vectorEffect: 'non-scaling-stroke' }}
-                  onClick={() =>
-                    toast('info', `${r.name} · ${r.environment.temperature.toFixed(1)}℃ · 湿度 ${r.environment.humidity}%`)
-                  }
+                  style={{ vectorEffect: 'non-scaling-stroke' }}
                 />
                 {/* 门洞：用地板色覆盖墙体形成开口 + 开门弧线 */}
                 {door && (
@@ -205,9 +214,13 @@ export function LiveMap() {
                     <path d={door.arc} fill="none" stroke="#c3d0ca" strokeWidth={2} style={{ vectorEffect: 'non-scaling-stroke' }} />
                   </>
                 )}
-                {/* 家具（来自可编辑数据，缺省回退按房型生成） */}
+                {/* 家具（来自可编辑数据，缺省回退按房型生成）—— 落地软投影提升层次 */}
                 {(r.furniture ?? defaultFurniture(r)).map((f) => (
-                  <g key={f.id} transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`} style={{ pointerEvents: 'none' }}>
+                  <g
+                    key={f.id}
+                    transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`}
+                    style={{ pointerEvents: 'none', filter: 'drop-shadow(0 3px 2.5px rgba(35,55,48,.2))' }}
+                  >
                     {drawFurniture(f.type, f.w, f.h)}
                   </g>
                 ))}
@@ -250,6 +263,27 @@ export function LiveMap() {
               <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke="#8fb6d6" strokeWidth={3} strokeLinecap="round" style={{ vectorEffect: 'non-scaling-stroke' }} strokeDasharray="2 10" />
             </g>
           ))}
+          {/* 昼夜色罩：按时间给全图上一层色调（白天为 0） */}
+          {amb.tintOpacity > 0 && (
+            <rect x={0} y={0} width={MAP_W} height={MAP_H} fill={amb.tint} opacity={amb.tintOpacity} style={{ pointerEvents: 'none' }} />
+          )}
+          {/* 房间点亮：宠物所在的房间透出暖光（夜间更明显，形成“只有它在的屋子亮着”） */}
+          {rooms.map((r) => {
+            if (!petRoomIds.has(r.id)) return null
+            const b = roomBounds(r)
+            const c = roomCentroid(r)
+            return (
+              <ellipse
+                key={`glow-${r.id}`}
+                cx={c.x}
+                cy={c.y}
+                rx={Math.max(b.w, b.h) * 0.62}
+                ry={Math.max(b.w, b.h) * 0.62}
+                fill="url(#roomGlow)"
+                style={{ pointerEvents: 'none' }}
+              />
+            )
+          })}
           {/* 过渡路径 + 脚印（沿真实门口折线，画在家具之上） */}
           {transition && transition.path.length > 1 && (
             <>
@@ -279,9 +313,11 @@ export function LiveMap() {
           // 正在跨房间行走的宠物：位置取当前折线路点；否则取房间质心 + 轻微游走
           const walking = transition?.petId === p.id && transition.path.length > 1
           const wpt = walking ? transition.path[Math.min(walkIndex, transition.path.length - 1)] : null
+          // 气泡打开时冻结该宠物的游走，避免它从气泡下方走开
+          const frozen = popover === p.id
           const w = wander[p.id] ?? { x: 0, y: 0 }
-          const px = wpt ? wpt.x : base.x + offsetUnits + (walking ? 0 : w.x)
-          const py = wpt ? wpt.y : base.y + (walking ? 0 : w.y)
+          const px = wpt ? wpt.x : base.x + offsetUnits + (walking || frozen ? 0 : w.x)
+          const py = wpt ? wpt.y : base.y + (walking || frozen ? 0 : w.y)
           const leftPct = px / 10
           const topPct = py / 6
           return (
@@ -336,8 +372,18 @@ export function LiveMap() {
           if (!p || p.id !== activePetId) return null
           const r = rooms.find((rm) => rm.id === p.roomId)
           const base = r ? roomCentroid(r) : { x: MAP_W / 2, y: MAP_H / 2 }
-          const leftPct = Math.max(16, Math.min(84, base.x / 10))
-          const topPct = base.y / 6
+          // 气泡锚定到宠物当前实际位置（含同房错位；气泡打开时已冻结游走），而非房间质心
+          const inRoom = pets.filter((x) => x.roomId === p.roomId)
+          const idx = inRoom.findIndex((x) => x.id === p.id)
+          const offsetUnits = (idx - (inRoom.length - 1) / 2) * 95
+          const walking = transition?.petId === p.id && transition.path.length > 1
+          const wpt = walking ? transition.path[Math.min(walkIndex, transition.path.length - 1)] : null
+          const px = wpt ? wpt.x : base.x + offsetUnits
+          const py = wpt ? wpt.y : base.y
+          const leftPct = Math.max(16, Math.min(84, px / 10))
+          const topPct = py / 6
+          // 宠物在地图上半部分时气泡朝下展开，避免被容器顶部裁剪而“消失”
+          const placeBelow = topPct < 50
           const roomDevs = r ? roomDevices(devices, r.id) : []
           const speaker = roomDevs.find((d) => d.type === 'speaker')
           const feeder = devices.find((d) => d.type === 'feeder')
@@ -352,8 +398,12 @@ export function LiveMap() {
           return (
             <div
               data-testid="avatar-popover"
-              className="animate-pop absolute z-[12] w-[260px] -translate-x-1/2 rounded-2xl border border-[#dce6e1] bg-white/97 p-3.5 shadow-soft backdrop-blur"
-              style={{ left: `${leftPct}%`, top: `calc(${topPct}% - 56px)`, transform: 'translate(-50%,-100%)' }}
+              className="animate-fade absolute z-[12] w-[260px] rounded-2xl border border-[#dce6e1] bg-white/97 p-3.5 shadow-soft backdrop-blur"
+              style={{
+                left: `${leftPct}%`,
+                top: placeBelow ? `calc(${topPct}% + 42px)` : `calc(${topPct}% - 42px)`,
+                transform: placeBelow ? 'translate(-50%,0)' : 'translate(-50%,-100%)',
+              }}
             >
               <div className="flex items-start justify-between">
                 <div>
