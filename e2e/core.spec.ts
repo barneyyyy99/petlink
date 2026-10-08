@@ -120,6 +120,14 @@ test('多宠物：切换宠物后追踪卡随之更新', async ({ page }) => {
   await expect(page.getByTestId('tracking-room')).toHaveText('卧室')
 })
 
+test('点击 Avatar 弹出快捷互动气泡（核心交互）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('pet-avatar').click({ force: true })
+  await expect(page.getByTestId('avatar-popover')).toBeVisible()
+  await expect(page.getByTestId('avatar-popover')).toContainText('看看它')
+})
+
 test('户型编辑器可布置家具（添加后可删除）', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()

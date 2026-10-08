@@ -1,15 +1,39 @@
+import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
 import { floorColor, WALL } from './furniture'
 import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
 import { PetSvg } from '@/components/PetSvg'
+import { behaviorLabel, roomDevices } from '@/lib/tracking'
+import { relativeTime } from '@/lib/time'
 import type { Point, PetBehavior } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
   running: 'pet-run',
   looking: 'pet-look',
   sleeping: 'pet-sleep',
+}
+
+const behaviorColor: Record<PetBehavior, string> = {
+  sleeping: '#7f93c0',
+  idle: '#9aa8a3',
+  looking: '#4ca092',
+  running: '#2e7f75',
+  eating: '#c5793f',
+  drinking: '#5aa6e0',
+  playing: '#d98fb0',
+  litter: '#b0a06a',
+}
+const behaviorBadge: Record<PetBehavior, string> = {
+  sleeping: '💤',
+  idle: '●',
+  looking: '👀',
+  running: '🐾',
+  eating: '🍽',
+  drinking: '💧',
+  playing: '🧶',
+  litter: '◫',
 }
 
 function poly(points: { x: number; y: number }[]) {
@@ -89,7 +113,10 @@ export function LiveMap() {
   const events = useStore((s) => s.events)
   const openModal = useStore((s) => s.openModal)
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
+  const openCamera = useStore((s) => s.openCamera)
+  const sendCommand = useStore((s) => s.sendCommand)
   const toast = useStore((s) => s.toast)
+  const [popover, setPopover] = useState<string | null>(null)
 
   const petRoomIds = new Set(pets.map((p) => p.roomId))
   // 历史轨迹：按 room_change 事件顺序（时间升序）取房间质心
@@ -124,14 +151,6 @@ export function LiveMap() {
                   </text>
                 </g>
               ))}
-            </>
-          )}
-          {/* 过渡路径 */}
-          {transition && (
-            <>
-              <line className="transition-route" x1={transition.from.x} y1={transition.from.y} x2={transition.to.x} y2={transition.to.y} />
-              <circle cx={transition.from.x} cy={transition.from.y} r={8} fill="#fff" stroke="#2e7f75" strokeWidth={5} />
-              <circle cx={transition.to.x} cy={transition.to.y} r={8} fill="#fff" stroke="#2e7f75" strokeWidth={5} />
             </>
           )}
           {/* 房间：地板色 + 墙体 + 门洞 + 家具 */}
@@ -208,6 +227,16 @@ export function LiveMap() {
               <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke="#8fb6d6" strokeWidth={3} strokeLinecap="round" style={{ vectorEffect: 'non-scaling-stroke' }} strokeDasharray="2 10" />
             </g>
           ))}
+          {/* 过渡路径 + 脚印（画在家具之上，确保可见） */}
+          {transition && (
+            <>
+              <line className="transition-route" x1={transition.from.x} y1={transition.from.y} x2={transition.to.x} y2={transition.to.y} />
+              {[0.3, 0.5, 0.7].map((t, i) => (
+                <circle key={i} cx={transition.from.x + (transition.to.x - transition.from.x) * t} cy={transition.from.y + (transition.to.y - transition.from.y) * t} r={6} fill="#4ca092" opacity={0.5 + i * 0.15} />
+              ))}
+              <circle cx={transition.to.x} cy={transition.to.y} r={9} fill="#fff" stroke="#2e7f75" strokeWidth={5} />
+            </>
+          )}
         </svg>
 
         {/* Avatar 覆盖层：每只宠物一个（同房间自动错位），点击选中并打开详情 */}
@@ -220,37 +249,107 @@ export function LiveMap() {
           // 以地图坐标系错位，随地图缩放自适应（而非固定像素）
           const offsetUnits = (idx - (inRoom.length - 1) / 2) * 95
           const isActive = p.id === activePetId
+          const color = behaviorColor[p.behavior]
+          const leftPct = (base.x + offsetUnits) / 10
+          const topPct = base.y / 6
           return (
-            <button
+            <div
               key={p.id}
-              data-testid={isActive ? 'pet-avatar' : 'pet-avatar-other'}
-              aria-label={`${p.name} Avatar，当前${r?.name ?? ''}`}
-              onClick={() => {
-                if (!isActive) {
-                  setActivePet(p.id)
-                  toast('info', `已切换到 ${p.name}`)
-                }
-                openModal('avatar')
-              }}
-              className={`absolute grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-[22px] border-4 bg-[#fff8e9] shadow-soft ${
-                behaviorAnim[p.behavior] ?? ''
-              } ${isActive ? 'border-teal-2 ring-4 ring-teal-2/20 z-[7]' : 'border-white opacity-90 z-[6]'}`}
+              className="absolute"
               style={{
-                left: `${(base.x + offsetUnits) / 10}%`,
-                top: `${base.y / 6}%`,
+                left: `${leftPct}%`,
+                top: `${topPct}%`,
                 transform: 'translate(-50%,-50%)',
                 transition: 'left .9s cubic-bezier(.22,.86,.36,1), top .9s cubic-bezier(.22,.86,.36,1)',
+                zIndex: isActive ? 8 : 6,
               }}
             >
-              <PetSvg behavior={p.behavior} size={56} />
-            </button>
+              <button
+                data-testid={isActive ? 'pet-avatar' : 'pet-avatar-other'}
+                aria-label={`${p.name} Avatar，当前${r?.name ?? ''}·${behaviorLabel[p.behavior]}`}
+                title={`${p.name} · ${r?.name ?? ''} · ${behaviorLabel[p.behavior]}`}
+                onClick={() => {
+                  if (!isActive) {
+                    setActivePet(p.id)
+                    setPopover(p.id)
+                  } else {
+                    setPopover((v) => (v === p.id ? null : p.id))
+                  }
+                }}
+                className={`relative grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-[22px] border-4 bg-[#fff8e9] ${behaviorAnim[p.behavior] ?? ''} ${isActive ? '' : 'opacity-90'}`}
+                style={{
+                  borderColor: isActive ? color : '#ffffff',
+                  boxShadow: isActive ? `0 0 0 6px ${color}22, 0 16px 26px rgba(53,86,77,.19)` : '0 10px 20px rgba(53,86,77,.14)',
+                }}
+              >
+                <PetSvg behavior={p.behavior} size={56} />
+              </button>
+              {/* 行为徽标（图标，默认不显文字，符合低文字原则） */}
+              <span
+                className="pointer-events-none absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-white text-[12px] shadow"
+                style={{ boxShadow: `0 0 0 2px ${color}` }}
+                aria-hidden
+              >
+                {behaviorBadge[p.behavior]}
+              </span>
+            </div>
           )
         })}
+
+        {/* Avatar 快捷互动气泡（核心交互：点一下即可看它/叫它/陪它） */}
+        {(() => {
+          const p = pets.find((x) => x.id === popover)
+          if (!p || p.id !== activePetId) return null
+          const r = rooms.find((rm) => rm.id === p.roomId)
+          const base = r ? roomCentroid(r) : { x: MAP_W / 2, y: MAP_H / 2 }
+          const leftPct = Math.max(16, Math.min(84, base.x / 10))
+          const topPct = base.y / 6
+          const roomDevs = r ? roomDevices(devices, r.id) : []
+          const speaker = roomDevs.find((d) => d.type === 'speaker')
+          const feeder = devices.find((d) => d.type === 'feeder')
+          const actions: { label: string; onClick: () => void }[] = [
+            { label: '👁 看看它', onClick: () => openCamera() },
+            { label: '🔊 叫它', onClick: () => sendCommand(speaker?.id ?? p.id, `呼叫${p.name}`) },
+            { label: '🎙 主人声音', onClick: () => sendCommand(speaker?.id ?? p.id, '播放主人声音') },
+            { label: '🎬 视频互动', onClick: () => openCamera(true) },
+            { label: '🍽 投喂', onClick: () => sendCommand(feeder?.id ?? p.id, '远程投喂 8g') },
+            { label: '✦ 逗宠', onClick: () => sendCommand(p.id, '启动逗宠模组') },
+          ]
+          return (
+            <div
+              data-testid="avatar-popover"
+              className="animate-pop absolute z-[12] w-[260px] -translate-x-1/2 rounded-2xl border border-[#dce6e1] bg-white/97 p-3.5 shadow-soft backdrop-blur"
+              style={{ left: `${leftPct}%`, top: `calc(${topPct}% - 56px)`, transform: 'translate(-50%,-100%)' }}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <b className="text-base">{p.name}</b>
+                  <div className="mt-0.5 text-xs text-muted">{r?.name} · {behaviorLabel[p.behavior]} · {relativeTime(p.lastUpdatedAt)}</div>
+                </div>
+                <button className="grid h-6 w-6 place-items-center rounded-lg bg-[#eef3f0] text-[#6e7f79]" onClick={() => setPopover(null)} aria-label="关闭">×</button>
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-teal">
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: behaviorColor[p.behavior] }} />
+                定位置信度 {Math.round(p.confidence * 100)}% · {p.trackingSources.includes('camera') ? '视觉 + BLE' : 'BLE / IMU'}
+              </div>
+              <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                {actions.map((a) => (
+                  <button key={a.label} className="rounded-xl border border-line bg-white px-1 py-2 text-[11px] font-bold text-[#53645e] hover:border-[#cde3dc] hover:bg-teal-soft hover:text-teal" onClick={a.onClick}>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+              <button className="mt-2 w-full rounded-xl bg-teal-soft py-1.5 text-[11px] font-bold text-teal" onClick={() => { setPopover(null); openModal('avatar') }}>
+                更多详情 / 管理宠物
+              </button>
+            </div>
+          )
+        })()}
       </div>
 
       <div className="absolute bottom-6 left-6 z-[5] flex gap-3 rounded-2xl border border-line bg-white/90 px-3 py-2.5 text-[11px] text-muted">
         <span>● {pets.length} 只宠物实时更新</span>
-        <span>点击 Avatar 切换/互动</span>
+        <span>点击 Avatar 看它/叫它/陪它</span>
         <span>设备图标可控制</span>
       </div>
     </div>
