@@ -120,7 +120,18 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
-        onDoubleClick={() => { if (tool === 'poly') editor.finishPoly() }}
+        onDoubleClick={(e) => {
+          if (tool === 'poly') { editor.finishPoly(); return }
+          // 选中房间时，双击某个顶点即可删除（≥3 保护）
+          if (selected < 0) return
+          const p = toCanvas(e)
+          const room = editor.rooms[selected]
+          if (!room) return
+          let vi = -1
+          let min = 14
+          room.polygon.forEach((v, i) => { const d = Math.hypot(v.x - p.x, v.y - p.y); if (d < min) { min = d; vi = i } })
+          if (vi >= 0) editor.removeVertex(vi)
+        }}
       />
     </div>
   )

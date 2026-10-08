@@ -55,7 +55,7 @@ export function MapPage() {
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center">
         <LiveMap />
         {mapMode === 'live' && <TrackingCard />}
         {mapMode === 'live' && <SuggestionCard />}

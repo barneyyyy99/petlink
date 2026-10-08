@@ -40,7 +40,7 @@ export function LiveMap() {
       : []
 
   return (
-    <div className="relative h-full overflow-hidden rounded-[28px] border border-line bg-[#fafcf9] shadow-soft">
+    <div className="relative mx-auto aspect-[5/3] max-h-full w-full overflow-hidden rounded-[28px] border border-line bg-[#fafcf9] shadow-soft">
       <div className="absolute inset-5 overflow-hidden rounded-[22px] border border-[#e2e9e4] bg-[#f4f7f3]">
         <svg
           className="absolute inset-0 h-full w-full"
@@ -124,7 +124,8 @@ export function LiveMap() {
           // 同房间内的宠物按序号横向错开
           const inRoom = pets.filter((x) => x.roomId === p.roomId)
           const idx = inRoom.findIndex((x) => x.id === p.id)
-          const offset = (idx - (inRoom.length - 1) / 2) * 70
+          // 以地图坐标系错位，随地图缩放自适应（而非固定像素）
+          const offsetUnits = (idx - (inRoom.length - 1) / 2) * 95
           const isActive = p.id === activePetId
           return (
             <button
@@ -142,7 +143,7 @@ export function LiveMap() {
                 behaviorAnim[p.behavior] ?? ''
               } ${isActive ? 'border-teal-2 ring-4 ring-teal-2/20 z-[7]' : 'border-white opacity-90 z-[6]'}`}
               style={{
-                left: `calc(${base.x / 10}% + ${offset}px)`,
+                left: `${(base.x + offsetUnits) / 10}%`,
                 top: `${base.y / 6}%`,
                 transform: 'translate(-50%,-50%)',
                 transition: 'left .9s cubic-bezier(.22,.86,.36,1), top .9s cubic-bezier(.22,.86,.36,1)',

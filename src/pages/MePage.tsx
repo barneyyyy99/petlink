@@ -1,16 +1,17 @@
 import { useStore } from '@/store/useStore'
 import { ensureNotificationPermission, notificationPermission, notificationsSupported } from '@/lib/notify'
 import { pushSupported, sendTestPush } from '@/lib/push'
+import { Icon, type IconName } from '@/components/Icon'
 
-const ITEMS: { ico: string; title: string; desc: string; modal: any; link: string }[] = [
-  { ico: '⌗', title: '家庭地图', desc: '上传户型、手绘或扫描，并绑定各房间设备。', modal: 'mapBuilder', link: '管理地图 →' },
-  { ico: '◎', title: '虚拟栅栏', desc: '设置安全区域，离开范围时接收逃生警报。', modal: 'fence', link: '安全区域 →' },
-  { ico: '⚑', title: '走失互寻', desc: '共享定位、发布寻宠动态并提醒附近会员。', modal: 'lost', link: '走失模式 →' },
-  { ico: '◖', title: '主人声音', desc: '录制声线并在音箱 / 智能屏远程播放。', modal: 'voice', link: '声音调教 →' },
-  { ico: '◌', title: '宠物对话框', desc: '用消息流承载找主人、语音、行为与互动事件。', modal: 'chat', link: '打开对话 →' },
-  { ico: '♡', title: '毛茸茸好友', desc: '添加附近宠友，并可向对方主人发起联系。', modal: 'friends', link: '附近好友 →' },
-  { ico: '⌁', title: '全屋自动联动', desc: '配置温湿度、摄像头接力与互动触发规则。', modal: 'automation', link: '管理规则 →' },
-  { ico: '▦', title: '设备管理', desc: '摄像头、音箱、屏幕、喂食器和空调绑定状态。', modal: 'device', link: '查看设备 →' },
+const ITEMS: { icon: IconName; title: string; desc: string; modal: any; link: string }[] = [
+  { icon: 'mapManage', title: '家庭地图', desc: '上传户型、手绘或扫描，并绑定各房间设备。', modal: 'mapBuilder', link: '管理地图 →' },
+  { icon: 'fence', title: '虚拟栅栏', desc: '设置安全区域，离开范围时接收逃生警报。', modal: 'fence', link: '安全区域 →' },
+  { icon: 'lost', title: '走失互寻', desc: '共享定位、发布寻宠动态并提醒附近会员。', modal: 'lost', link: '走失模式 →' },
+  { icon: 'voice', title: '主人声音', desc: '录制声线并在音箱 / 智能屏远程播放。', modal: 'voice', link: '声音调教 →' },
+  { icon: 'chat', title: '宠物对话框', desc: '用消息流承载找主人、语音、行为与互动事件。', modal: 'chat', link: '打开对话 →' },
+  { icon: 'friends', title: '毛茸茸好友', desc: '添加附近宠友，并可向对方主人发起联系。', modal: 'friends', link: '附近好友 →' },
+  { icon: 'automation', title: '全屋自动联动', desc: '配置温湿度、摄像头接力与互动触发规则。', modal: 'automation', link: '管理规则 →' },
+  { icon: 'devices', title: '设备管理', desc: '摄像头、音箱、屏幕、喂食器和空调绑定状态。', modal: 'device', link: '查看设备 →' },
 ]
 
 export function MePage() {
@@ -51,7 +52,9 @@ export function MePage() {
       <div className="grid grid-cols-3 gap-3.5 max-[900px]:grid-cols-2 max-[640px]:grid-cols-1">
         {ITEMS.map((it) => (
           <button key={it.title} onClick={() => openModal(it.modal)} className="min-h-[150px] rounded-2xl border border-line bg-white p-5 text-left shadow-softsm transition hover:-translate-y-0.5">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-teal-soft text-xl text-teal">{it.ico}</div>
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-teal-soft text-teal">
+              <Icon name={it.icon} size={22} />
+            </div>
             <h4 className="my-3 text-base font-bold">{it.title}</h4>
             <p className="min-h-[38px] text-xs leading-relaxed text-muted">{it.desc}</p>
             <span className="text-xs font-bold text-teal">{it.link}</span>

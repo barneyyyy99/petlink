@@ -23,12 +23,13 @@ import { DeviceModal } from '@/modals/DeviceModal'
 import { DeviceControlModal } from '@/modals/DeviceControlModal'
 import { EventModal, ActionModal, SoundModal, FriendsModal, LiveLocateModal } from '@/modals/MiscModals'
 import { AuthModal } from '@/modals/AuthModal'
+import { Icon, type IconName } from '@/components/Icon'
 
-const NAV: { key: PageKey; ico: string; label: string }[] = [
-  { key: 'home', ico: '⌂', label: '首页' },
-  { key: 'map', ico: '⌖', label: '地图' },
-  { key: 'records', ico: '♡', label: '记录' },
-  { key: 'me', ico: '•••', label: '我的' },
+const NAV: { key: PageKey; icon: IconName; label: string }[] = [
+  { key: 'home', icon: 'home', label: '首页' },
+  { key: 'map', icon: 'map', label: '地图' },
+  { key: 'records', icon: 'records', label: '记录' },
+  { key: 'me', icon: 'me', label: '我的' },
 ]
 
 export default function App() {
@@ -66,7 +67,7 @@ export default function App() {
                 page === n.key ? 'bg-teal-soft font-bold text-teal' : 'text-[#91a09b] hover:bg-[#f0f5f2]'
               } max-[1000px]:flex-1`}
             >
-              <span className="text-xl">{n.ico}</span>
+              <Icon name={n.icon} size={22} />
               <span>{n.label}</span>
             </button>
           ))}
@@ -74,7 +75,7 @@ export default function App() {
         <div className="flex-1 max-[1000px]:hidden" />
         {DEMO_ENABLED && (
           <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773] max-[1000px]:hidden" data-testid="demo-btn" title="演示控制" onClick={() => toggleDemo()}>
-            ⚙
+            <Icon name="settings" size={18} />
           </button>
         )}
       </aside>
@@ -88,10 +89,14 @@ export default function App() {
           </div>
           <div className="flex gap-2.5">
             <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" data-testid="account-btn" title={authUser ? `已登录 ${authUser.email}` : '登录 / 云端同步'} onClick={() => openModal('auth')}>
-              {authUser ? '☁' : '⇲'}
+              <Icon name={authUser ? 'cloud' : 'login'} size={18} />
             </button>
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" title="通知" onClick={() => toast('info', '没有新的异常通知')}>🔔</button>
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" title="地图管理" onClick={() => openModal('mapBuilder')}>⌗</button>
+            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" title="通知" onClick={() => toast('info', '没有新的异常通知')}>
+              <Icon name="bell" size={18} />
+            </button>
+            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" title="地图管理" onClick={() => openModal('mapBuilder')}>
+              <Icon name="mapManage" size={18} />
+            </button>
           </div>
         </div>
 

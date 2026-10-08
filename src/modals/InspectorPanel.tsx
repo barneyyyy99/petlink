@@ -78,34 +78,25 @@ export function InspectorPanel({ editor }: { editor: Editor }) {
             </div>
           </div>
           <div className="mt-2 grid grid-cols-4 gap-1.5">
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.nudge(-15, 0)}>← 左</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.nudge(15, 0)}>右 →</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.nudge(0, -15)}>↑ 上</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.nudge(0, 15)}>下 ↓</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.nudge(-15, 0)}>← 左</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.nudge(15, 0)}>右 →</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.nudge(0, -15)}>↑ 上</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.nudge(0, 15)}>下 ↓</button>
           </div>
           <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.scale(0.92, 1)}>缩窄</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.scale(1.08, 1)}>加宽</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.scale(1, 0.92)}>变矮</button>
-            <button className="btn !px-1 !text-[10px]" onClick={() => editor.scale(1, 1.08)}>变高</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.scale(0.92, 1)}>缩窄</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.scale(1.08, 1)}>加宽</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.scale(1, 0.92)}>变矮</button>
+            <button className="btn !px-1 !py-2 !text-[11px]" onClick={() => editor.scale(1, 1.08)}>变高</button>
           </div>
           <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-            <button data-testid="add-vertex" className="btn !text-[10px]" onClick={editor.addVertex}>＋ 添加转角</button>
-            <button className="btn !text-[10px]" onClick={editor.duplicate}>复制房间</button>
+            <button data-testid="add-vertex" className="btn !py-2 !text-[11px]" onClick={editor.addVertex}>＋ 添加转角</button>
+            <button className="btn !py-2 !text-[11px]" onClick={editor.duplicate}>复制房间</button>
           </div>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {room.polygon.map((_, vi) => (
-              <button
-                key={vi}
-                className="btn !px-2 !py-1 !text-[10px]"
-                disabled={room.polygon.length <= 3}
-                onClick={() => editor.removeVertex(vi)}
-              >
-                删点{vi + 1}
-              </button>
-            ))}
+          <div className="mt-2 rounded-lg bg-[#eef6f2] px-2.5 py-2 text-[11px] leading-relaxed text-[#60746c]">
+            拖动绿色顶点改形状；<b>双击顶点可删除</b>（至少保留 3 个）。
           </div>
-          <div className="mt-2 text-[10px] text-muted">
+          <div className="mt-2 text-[11px] text-muted">
             {geomText(room)}
           </div>
         </div>
