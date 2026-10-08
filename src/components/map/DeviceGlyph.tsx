@@ -7,15 +7,16 @@ const TEAL = '#2e7f75'
 const TEALSOFT = '#cfe8e0'
 
 function Camera() {
-  // 小度智能摄像头：球形云台 + 大镜头
+  // 小度智能摄像头：枪机机身 + 镜头筒 + 支架
   return (
     <g>
-      <rect x={-9} y={6} width={18} height={5} rx={2} fill="#c3d2cb" />
-      <circle cx={0} cy={-1} r={12} fill="#ffffff" stroke={INK} strokeWidth={1.4} />
-      <circle cx={0} cy={-1} r={7} fill="#20302c" />
-      <circle cx={0} cy={-1} r={3.4} fill={TEAL} />
-      <circle cx={2} cy={-3} r={1.1} fill="#eafff8" />
-      <circle cx={7} cy={-7} r={1.3} fill="#d9574f" />
+      <path d="M-11 12 L-11 6 L-5 6" fill="none" stroke={INK} strokeWidth={1.6} strokeLinecap="round" />
+      <rect x={-12} y={-7} width={18} height={14} rx={6} fill="#ffffff" stroke={INK} strokeWidth={1.5} />
+      <rect x={-9} y={-7} width={4} height={14} rx={2} fill="#eef4f1" />
+      <circle cx={8} cy={0} r={6.5} fill="#20302c" stroke={INK} strokeWidth={1} />
+      <circle cx={8} cy={0} r={3.2} fill={TEAL} />
+      <circle cx={9.6} cy={-1.6} r={1.1} fill="#eafff8" />
+      <circle cx={-7} cy={-4} r={1.2} fill="#d9574f" />
     </g>
   )
 }

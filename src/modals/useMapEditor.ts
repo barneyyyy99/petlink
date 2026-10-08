@@ -202,6 +202,19 @@ export function useMapEditor() {
     if (selectedFurn < 0) return
     mutateFurn(selectedFurn, (f) => ({ ...f, w: Math.max(16, f.w * sx), h: Math.max(12, f.h * sy) }))
   }, [selectedFurn, mutateFurn])
+  const resizeFurnTo = useCallback((idx: number, w: number, h: number) => {
+    mutateFurn(idx, (f) => {
+      const cx = f.x + f.w / 2
+      const cy = f.y + f.h / 2
+      const nw = Math.max(16, w)
+      const nh = Math.max(12, h)
+      return { ...f, w: nw, h: nh, x: cx - nw / 2, y: cy - nh / 2 }
+    }, false)
+  }, [mutateFurn])
+  const rotateFurn = useCallback((deg: number) => {
+    if (selectedFurn < 0) return
+    mutateFurn(selectedFurn, (f) => ({ ...f, rotation: (((f.rotation ?? 0) + deg) % 360 + 360) % 360 }))
+  }, [selectedFurn, mutateFurn])
   const deleteFurn = useCallback(() => {
     if (selected < 0 || selectedFurn < 0) return
     snapshot()
@@ -213,7 +226,7 @@ export function useMapEditor() {
     rooms, setRooms, selected, setSelected, tool, setTool, polyDraft, setPolyDraft,
     load, undo, redo, snapshot, addRect, addPreset, finishPoly, mutateSelected, mutateAt, renameAt,
     setName, setKind, nudge, scale, addVertex, removeVertex, duplicate, remove, clear, hitRoom,
-    selectedFurn, setSelectedFurn, furnOf, addFurniture, moveFurn, resizeFurn, deleteFurn,
+    selectedFurn, setSelectedFurn, furnOf, addFurniture, moveFurn, resizeFurn, resizeFurnTo, rotateFurn, deleteFurn,
     canUndo: () => undoStack.current.length > 0, canRedo: () => redoStack.current.length > 0,
     MAP_W, MAP_H, bounds,
   }

@@ -138,7 +138,7 @@ export function MapBuilderModal() {
                   <div className="text-[11px] text-muted">先在上方「调整布局」选中一个房间，再回到这里布置家具。</div>
                 ) : (
                   <>
-                    <div className="mb-1.5 text-[11px] text-muted">点击家具拖动摆放；从下方添加，选中后可缩放/删除。</div>
+                    <div className="mb-1.5 text-[11px] text-muted">点击家具拖动摆放；拖右下角手柄缩放；选中后可旋转/删除；从下方添加。</div>
                     <div className="flex flex-wrap gap-1.5">
                       {FURNITURE_PALETTE.map((t) => (
                         <button key={t} className="rounded-lg border border-line bg-white px-2 py-1 text-[11px] hover:border-teal-2" onClick={() => editor.addFurniture(t)}>
@@ -152,6 +152,8 @@ export function MapBuilderModal() {
                         <button className="btn !py-1.5 !text-[11px]" onClick={() => editor.resizeFurn(0.9, 1)}>宽-</button>
                         <button className="btn !py-1.5 !text-[11px]" onClick={() => editor.resizeFurn(1, 1.12)}>高+</button>
                         <button className="btn !py-1.5 !text-[11px]" onClick={() => editor.resizeFurn(1, 0.9)}>高-</button>
+                        <button className="btn !py-1.5 !text-[11px]" onClick={() => editor.rotateFurn(-45)}>↺ 旋转</button>
+                        <button className="btn !py-1.5 !text-[11px]" onClick={() => editor.rotateFurn(45)}>↻ 旋转</button>
                         <button className="btn btn-red !py-1.5 !text-[11px]" data-testid="furn-delete" onClick={editor.deleteFurn}>删除家具</button>
                       </div>
                     )}

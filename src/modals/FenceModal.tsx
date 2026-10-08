@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { Modal } from '@/components/Modal'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
+import { floorColor } from '@/components/map/furniture'
+import { drawFurniture, defaultFurniture } from '@/components/map/furnitureLib'
 import type { Point } from '@/domain/types'
 
 export function FenceModal() {
@@ -60,8 +62,16 @@ export function FenceModal() {
             const b = roomBounds(r)
             return (
               <g key={r.id}>
-                <polygon points={r.polygon.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(255,255,255,.88)" stroke="#c7d4ce" strokeWidth={5} style={{ vectorEffect: 'non-scaling-stroke' }} />
-                <text x={b.x + 14} y={b.y + 26} fontSize={17} fontWeight={800} fill="#84958e" style={{ pointerEvents: 'none' }}>{r.name}</text>
+                <polygon points={r.polygon.map((p) => `${p.x},${p.y}`).join(' ')} fill={floorColor(r.kind)} stroke="#7f9289" strokeWidth={7} strokeLinejoin="round" style={{ vectorEffect: 'non-scaling-stroke' }} />
+                <polygon points={r.polygon.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#c7d4ce" strokeWidth={2} style={{ vectorEffect: 'non-scaling-stroke' }} />
+                <g opacity={0.6} style={{ pointerEvents: 'none' }}>
+                  {(r.furniture ?? defaultFurniture(r)).map((f) => (
+                    <g key={f.id} transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`}>
+                      {drawFurniture(f.type, f.w, f.h)}
+                    </g>
+                  ))}
+                </g>
+                <text x={b.x + 14} y={b.y + 24} fontSize={15} fontWeight={800} fill="#7c8d87" style={{ pointerEvents: 'none' }}>{r.name}</text>
               </g>
             )
           })}

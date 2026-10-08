@@ -8,7 +8,7 @@ type Editor = ReturnType<typeof useMapEditor>
 
 export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTMLImageElement | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const drag = useRef<{ action: 'rect' | 'move' | 'vertex' | 'furn' | null; start: Point; originPoly?: Point[]; vertex: number; furnIdx?: number; ox?: number; oy?: number }>({ action: null, start: { x: 0, y: 0 }, vertex: -1 })
+  const drag = useRef<{ action: 'rect' | 'move' | 'vertex' | 'furn' | 'furnresize' | null; start: Point; originPoly?: Point[]; vertex: number; furnIdx?: number; ox?: number; oy?: number }>({ action: null, start: { x: 0, y: 0 }, vertex: -1 })
   const tempRect = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
   const { rooms, selected, tool, polyDraft } = editor
 
@@ -48,18 +48,38 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
       ctx.stroke()
       polyDraft.forEach((p) => { ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fillStyle = '#2e7f75'; ctx.fill() })
     }
-    // 家具编辑层
+    // 家具编辑层（支持旋转 + 右下角缩放手柄）
     if (tool === 'furniture' && selected >= 0 && rooms[selected]) {
       editor.furnOf(rooms[selected]).forEach((f, i) => {
         const on = i === editor.selectedFurn
+        const cx = f.x + f.w / 2
+        const cy = f.y + f.h / 2
+        ctx.save()
+        ctx.translate(cx, cy)
+        ctx.rotate(((f.rotation ?? 0) * Math.PI) / 180)
         ctx.fillStyle = on ? 'rgba(76,160,146,.28)' : 'rgba(170,195,186,.4)'
         ctx.strokeStyle = on ? '#2e7f75' : '#9bb0a6'
         ctx.lineWidth = on ? 3 : 1.6
-        ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.fill(); ctx.stroke()
+        ctx.beginPath(); ctx.rect(-f.w / 2, -f.h / 2, f.w, f.h); ctx.fill(); ctx.stroke()
         ctx.fillStyle = '#45544e'; ctx.font = 'bold 13px sans-serif'
-        ctx.fillText(FURNITURE_META[f.type].label, f.x + 5, f.y + 16)
+        ctx.fillText(FURNITURE_META[f.type].label, -f.w / 2 + 5, -f.h / 2 + 16)
+        if (on) {
+          ctx.fillStyle = '#2e7f75'
+          ctx.beginPath(); ctx.rect(f.w / 2 - 7, f.h / 2 - 7, 14, 14); ctx.fill()
+        }
+        ctx.restore()
       })
     }
+  }
+
+  // 将地图坐标点转换到某家具的本地（去旋转）坐标
+  const toLocal = (p: Point, f: { x: number; y: number; w: number; h: number; rotation?: number }) => {
+    const cx = f.x + f.w / 2
+    const cy = f.y + f.h / 2
+    const rot = ((f.rotation ?? 0) * Math.PI) / 180
+    const dx = p.x - cx
+    const dy = p.y - cy
+    return { lx: dx * Math.cos(rot) + dy * Math.sin(rot), ly: -dx * Math.sin(rot) + dy * Math.cos(rot) }
   }
 
   useEffect(draw)
@@ -72,14 +92,24 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
       editor.setPolyDraft([...polyDraft, p])
       return
     }
-    // 家具编辑：命中选中房间内的家具 → 选中并拖动
+    // 家具编辑：命中选中房间内的家具 → 选中并拖动；选中项右下角手柄 → 缩放
     if (tool === 'furniture') {
       if (selected < 0) { editor.setSelectedFurn(-1); return }
       const list = editor.furnOf(rooms[selected])
+      const sel = editor.selectedFurn
+      if (sel >= 0 && list[sel]) {
+        const f = list[sel]
+        const { lx, ly } = toLocal(p, f)
+        if (Math.abs(lx - f.w / 2) < 13 && Math.abs(ly - f.h / 2) < 13) {
+          editor.snapshot()
+          drag.current = { action: 'furnresize', start: p, vertex: -1, furnIdx: sel }
+          return
+        }
+      }
       let hit = -1
       for (let i = list.length - 1; i >= 0; i--) {
-        const f = list[i]
-        if (p.x >= f.x && p.x <= f.x + f.w && p.y >= f.y && p.y <= f.y + f.h) { hit = i; break }
+        const { lx, ly } = toLocal(p, list[i])
+        if (Math.abs(lx) <= list[i].w / 2 && Math.abs(ly) <= list[i].h / 2) { hit = i; break }
       }
       editor.setSelectedFurn(hit)
       if (hit >= 0) {
@@ -111,6 +141,11 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
     const p = toCanvas(e)
     if (drag.current.action === 'furn') {
       editor.moveFurn(drag.current.furnIdx!, p.x - (drag.current.ox ?? 0), p.y - (drag.current.oy ?? 0))
+      return
+    }
+    if (drag.current.action === 'furnresize' && selected >= 0) {
+      const f = editor.furnOf(rooms[selected])[drag.current.furnIdx!]
+      if (f) { const { lx, ly } = toLocal(p, f); editor.resizeFurnTo(drag.current.furnIdx!, Math.abs(lx) * 2, Math.abs(ly) * 2) }
       return
     }
     if (drag.current.action === 'rect') {
