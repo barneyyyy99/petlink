@@ -108,20 +108,16 @@ export function HomePage() {
             <QuickCard icon="peek" bg="bg-blue-soft text-blue" title="看一眼" sub={`${room?.name} · 在线`} onClick={() => openCamera()} />
           </div>
 
-          <div className="mt-6 eyebrow">LIVE STATUS</div>
+          <div className="mt-6 eyebrow">今日状态</div>
           <div className="card mt-2.5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold">{pet.name}现在怎么样</h3>
-              <span className="badge">● 无异常</span>
-            </div>
             <div className="flex items-center justify-between">
               <div>
-                <b className="text-xl">● {behaviorLabel[pet.behavior]}</b>
-                <div className="mt-1.5 text-sm text-muted">{behaviorMeta[pet.behavior]}</div>
+                <div className="flex items-center gap-2"><b className="text-lg">{pet.name}今日状态分</b><span className="badge">● 无异常</span></div>
+                <div className="mt-1.5 text-sm text-muted">按今日真实活动推导 · 透明可解释</div>
               </div>
-              <div className="text-right"><div className="text-5xl font-extrabold text-teal">{score}</div><small className="text-muted">今日状态分（按活动推导）</small></div>
+              <div className="text-right"><div className="text-5xl font-extrabold text-teal">{score}</div></div>
             </div>
-            <div className="mt-5 grid grid-cols-3 border-t border-line pt-4 text-center">
+            <div className="mt-4 grid grid-cols-3 border-t border-line pt-4 text-center">
               <div><b className="block text-lg">{sum.roomChanges}</b><span className="text-[11px] text-muted">跨房间</span></div>
               <div><b className="block text-lg">{sum.eats + sum.drinks}</b><span className="text-[11px] text-muted">进食/饮水</span></div>
               <div><b className="block text-lg">{sum.ownerInteractions}</b><span className="text-[11px] text-muted">远程陪伴</span></div>

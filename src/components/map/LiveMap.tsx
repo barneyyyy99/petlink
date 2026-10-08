@@ -382,6 +382,18 @@ export function LiveMap() {
               >
                 {behaviorBadge[p.behavior]}
               </span>
+              {/* 常驻名字 + 当前行为标签：无需点击即可看清每只宠物的实时状态 */}
+              <span
+                className="pointer-events-none absolute left-1/2 top-[72px] flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold shadow-softsm"
+                style={{
+                  borderColor: isActive ? color : '#e4ece8',
+                  background: isActive ? '#ffffff' : 'rgba(255,255,255,.82)',
+                  color: isActive ? color : '#6e7f79',
+                }}
+                aria-hidden
+              >
+                {p.name} · {behaviorLabel[p.behavior]}
+              </span>
             </div>
           )
         })}

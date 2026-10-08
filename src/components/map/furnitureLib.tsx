@@ -23,7 +23,12 @@ const DRAW: Record<FurnitureType, Draw> = {
       <line x1={w * 0.5} y1={h * 0.45} x2={w * 0.5} y2={h * 0.9} stroke={FABRIC_D} strokeWidth={1.2} />
     </g>
   ),
-  coffee_table: (w, h) => <rect width={w} height={h} rx={7} fill={WOOD} stroke={WOOD_D} strokeWidth={1.5} />,
+  coffee_table: (w, h) => (
+    <g>
+      <rect width={w} height={h} rx={8} fill={WOOD} stroke={WOOD_D} strokeWidth={1.5} />
+      <rect x={w * 0.12} y={h * 0.18} width={w * 0.76} height={h * 0.64} rx={5} fill="#d8c6a3" />
+    </g>
+  ),
   tv: (w, h) => (
     <g>
       <rect y={h * 0.6} width={w} height={h * 0.4} rx={3} fill={WOOD} />
@@ -41,7 +46,13 @@ const DRAW: Record<FurnitureType, Draw> = {
       <rect x={0} y={h * 0.42} width={w} height={h * 0.58} rx={10} fill="#cfe0d8" />
     </g>
   ),
-  nightstand: (w, h) => <rect width={w} height={h} rx={4} fill={WOOD} stroke={WOOD_D} strokeWidth={1.2} />,
+  nightstand: (w, h) => (
+    <g>
+      <rect width={w} height={h} rx={4} fill={WOOD} stroke={WOOD_D} strokeWidth={1.2} />
+      <line x1={w * 0.15} y1={h * 0.52} x2={w * 0.85} y2={h * 0.52} stroke={WOOD_D} strokeWidth={1} />
+      <circle cx={w * 0.5} cy={h * 0.3} r={Math.min(w, h) * 0.08} fill={WOOD_D} />
+    </g>
+  ),
   wardrobe: (w, h) => (
     <g>
       <rect width={w} height={h} rx={4} fill={SOFT} stroke={WOOD_D} strokeWidth={1.4} />
@@ -54,7 +65,12 @@ const DRAW: Record<FurnitureType, Draw> = {
       <rect x={w * 0.3} y={0} width={w * 0.3} height={h * 0.45} rx={2} fill={SCREEN} />
     </g>
   ),
-  chair: (w, h) => <ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} fill={FABRIC} stroke={FABRIC_D} strokeWidth={1.4} />,
+  chair: (w, h) => (
+    <g>
+      <rect x={w * 0.12} y={h * 0.14} width={w * 0.76} height={h * 0.78} rx={6} fill={FABRIC} stroke={FABRIC_D} strokeWidth={1.3} />
+      <rect x={w * 0.12} y={0} width={w * 0.76} height={h * 0.2} rx={4} fill={FABRIC_D} />
+    </g>
+  ),
   bookshelf: (w, h) => (
     <g>
       <rect width={w} height={h} rx={3} fill={WOOD} stroke={WOOD_D} strokeWidth={1.4} />
@@ -62,8 +78,21 @@ const DRAW: Record<FurnitureType, Draw> = {
       <line x1={0} y1={(h * 2) / 3} x2={w} y2={(h * 2) / 3} stroke={WOOD_D} strokeWidth={1.3} />
     </g>
   ),
-  dining_table: (w, h) => <rect width={w} height={h} rx={Math.min(w, h) / 2} fill={WOOD} stroke={WOOD_D} strokeWidth={1.8} />,
-  cabinet: (w, h) => <rect width={w} height={h} rx={3} fill={SOFT} stroke={WOOD_D} strokeWidth={1.3} />,
+  dining_table: (w, h) => (
+    <g>
+      <rect width={w} height={h} rx={Math.min(w, h) / 2.2} fill={WOOD} stroke={WOOD_D} strokeWidth={1.8} />
+      <circle cx={w * 0.35} cy={h * 0.5} r={Math.min(w, h) * 0.13} fill="#f2ead9" />
+      <circle cx={w * 0.65} cy={h * 0.5} r={Math.min(w, h) * 0.13} fill="#f2ead9" />
+    </g>
+  ),
+  cabinet: (w, h) => (
+    <g>
+      <rect width={w} height={h} rx={3} fill={SOFT} stroke={WOOD_D} strokeWidth={1.3} />
+      <line x1={w / 2} y1={h * 0.18} x2={w / 2} y2={h * 0.82} stroke={WOOD_D} strokeWidth={1} />
+      <circle cx={w * 0.47} cy={h * 0.5} r={1.8} fill={WOOD_D} />
+      <circle cx={w * 0.53} cy={h * 0.5} r={1.8} fill={WOOD_D} />
+    </g>
+  ),
   fridge: (w, h) => (
     <g>
       <rect width={w} height={h} rx={5} fill="#eef2f0" stroke="#b9c6bf" strokeWidth={1.4} />
@@ -78,9 +107,9 @@ const DRAW: Record<FurnitureType, Draw> = {
   ),
   cat_tree: (w, h) => (
     <g>
-      <rect x={w * 0.42} y={0} width={w * 0.16} height={h} fill={WOOD} />
-      <rect x={0} y={0} width={w} height={h * 0.22} rx={5} fill={SOFT} />
-      <rect x={w * 0.2} y={h * 0.7} width={w * 0.6} height={h * 0.3} rx={5} fill={SOFT} />
+      <rect x={w * 0.1} y={h * 0.84} width={w * 0.8} height={h * 0.16} rx={5} fill={SOFT} stroke={WOOD_D} strokeWidth={1} />
+      <rect x={w * 0.42} y={h * 0.18} width={w * 0.16} height={h * 0.66} fill={WOOD} />
+      <circle cx={w * 0.5} cy={h * 0.16} r={Math.min(w, h) * 0.3} fill={SOFT} stroke={WOOD_D} strokeWidth={1} />
     </g>
   ),
   litter: (w, h) => (
