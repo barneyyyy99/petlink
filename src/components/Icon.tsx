@@ -22,6 +22,7 @@ import {
   Video,
   Sparkles,
   Camera,
+  BookHeart,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -50,6 +51,7 @@ const MAP: Record<string, LucideIcon> = {
   video: Video,
   play: Sparkles,
   camera: Camera,
+  diary: BookHeart,
 }
 
 export function Icon({

@@ -10,7 +10,7 @@ import type {
 import { makeId, rectPoints } from './geometry'
 import { defaultFurniture } from '@/components/map/furnitureLib'
 
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 function room(
   id: string,
@@ -163,6 +163,7 @@ export function seedEvents(): PetEvent[] {
     type,
     title,
     detail,
+    petId: 'pet_maoqiu',
     ...extra,
   })
   return [
@@ -183,6 +184,16 @@ export function seedEvents(): PetEvent[] {
       roomId: 'room_living',
       source: ['camera'],
     }),
+    // 团子（第二只宠物）当日事件，用于演示多宠物各自的日记
+    ev(210, 'room_change', '客厅 → 卧室', '项圈 BLE 判断团子进入卧室', {
+      fromRoomId: 'room_living',
+      toRoomId: 'room_bedroom',
+      roomId: 'room_bedroom',
+      petId: 'pet_tuanzi',
+      source: ['ble'],
+    }),
+    ev(150, 'play', '玩耍', '卧室摄像头识别到团子追逐玩具 6 分钟', { roomId: 'room_bedroom', petId: 'pet_tuanzi', media: { type: 'video' } }),
+    ev(80, 'drink', '喝水', '饮水器检测到团子饮水 20 秒', { roomId: 'room_bedroom', petId: 'pet_tuanzi' }),
   ]
 }
 

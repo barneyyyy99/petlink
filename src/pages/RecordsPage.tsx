@@ -1,12 +1,14 @@
 import { useStore } from '@/store/useStore'
-import { summarizeDay } from '@/lib/diary'
+import { summarizeDay, buildDiary, eventsForPet } from '@/lib/diary'
 
 export function RecordsPage() {
   const openModal = useStore((s) => s.openModal)
   const toggleDrawer = useStore((s) => s.toggleDrawer)
   const events = useStore((s) => s.events)
   const home = useStore((s) => s.homeMap)
-  const diaryText = useStore((s) => s.diaryText)
+  const pet = useStore((s) => s.pet)
+  const pets = useStore((s) => s.pets)
+  const diarySeed = useStore((s) => s.diarySeed)
   const moodSignal = useStore((s) => s.moodSignal)
   const companionEnabled = useStore((s) => s.companionEnabled)
   const setCompanionEnabled = useStore((s) => s.setCompanionEnabled)
@@ -15,7 +17,9 @@ export function RecordsPage() {
   const openCamera = useStore((s) => s.openCamera)
   const toast = useStore((s) => s.toast)
 
-  const sum = summarizeDay(events, home)
+  const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
+  const sum = summarizeDay(petEvents, home)
+  const diary = buildDiary(sum, moodSignal, diarySeed)
 
   return (
     <div>
@@ -54,11 +58,11 @@ export function RecordsPage() {
 
         <div className="rounded-[26px] border border-[#e2e9e4] bg-gradient-to-br from-[#f0f8f4] to-[#fffaf4] p-6 shadow-softsm">
           <div className="flex items-center justify-between gap-2">
-            <span className="badge">毛球的今天 · AI 拟人</span>
+            <span className="badge">{pet.name}的今天 · AI 拟人</span>
             <span className="badge badge-warn">情绪陪伴</span>
           </div>
-          <div data-testid="diary-text" className="my-4 text-lg font-bold leading-relaxed tracking-tight">“{diaryText}”</div>
-          <small className="text-muted">↑ AI 第一人称文案（非事实）。以下为客观陪伴线索与设置。</small>
+          <div data-testid="diary-text" className="my-4 text-lg font-bold leading-relaxed tracking-tight">“{diary}”</div>
+          <small className="text-muted">↑ AI 第一人称文案，依据{pet.name}今日真实事件生成（非客观结论）。以下为客观陪伴线索与设置。</small>
 
           <div data-testid="emotion-signal" className={`mt-3.5 rounded-2xl border p-3 text-[11px] leading-relaxed ${moodSignal ? 'border-[#f2dcc5] bg-[#fff2e4] text-[#8b623f]' : 'border-[#e0e8e4] bg-[#f3f7f5] text-[#61736d]'}`}>
             <b>主人陪伴线索：{moodSignal ? '触发一条温和提醒' : '暂无提醒'}</b>
@@ -70,11 +74,11 @@ export function RecordsPage() {
 
           {moodSignal && (
             <div data-testid="emotion-push" className="animate-pop mt-2.5 rounded-2xl border border-[#e4eae6] bg-white p-3.5 shadow-softsm">
-              <div className="text-[9px] uppercase tracking-wide text-muted">APP PUSH · 来自毛球</div>
+              <div className="text-[9px] uppercase tracking-wide text-muted">APP PUSH · 来自{pet.name}</div>
               <b className="my-1.5 block text-sm">“今天听起来你有点没精神。”</b>
               <p className="m-0 mb-2.5 text-[11px] leading-relaxed text-[#6c7d77]">带我出去走走吧？我今天也想多活动一会儿 🐾</p>
               <div className="flex gap-2">
-                <button className="btn btn-primary" onClick={() => openCamera()}>先看看毛球</button>
+                <button className="btn btn-primary" onClick={() => openCamera()}>先看看{pet.name}</button>
                 <button className="btn" onClick={() => toast('success', '已加入今晚散步提醒')}>今晚去散步</button>
               </div>
             </div>
@@ -95,7 +99,7 @@ export function RecordsPage() {
       <div className="card mt-5">
         <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">关键事件</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>在踪迹栏查看</button></div>
         <div className="grid grid-cols-3 gap-3.5 max-[640px]:grid-cols-1">
-          {events.slice(0, 3).map((e) => (
+          {petEvents.slice(0, 3).map((e) => (
             <div key={e.id} className="rounded-2xl border border-line bg-white p-4"><span className="badge">{new Date(e.timestamp).toTimeString().slice(0, 5)}</span><h4 className="my-2 text-base font-bold">{e.title}</h4><p className="m-0 text-xs text-muted">{e.detail}</p></div>
           ))}
         </div>

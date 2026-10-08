@@ -1,7 +1,7 @@
 import { useStore, currentRoom } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, behaviorMeta } from '@/lib/tracking'
-import { summarizeDay } from '@/lib/diary'
+import { summarizeDay, buildDiary, eventsForPet } from '@/lib/diary'
 import { Icon, type IconName } from '@/components/Icon'
 
 export function HomePage() {
@@ -18,13 +18,19 @@ export function HomePage() {
   const events = useStore((s) => s.events)
   const home = useStore((s) => s.homeMap)
   const rules = useStore((s) => s.rules)
-  const diaryText = useStore((s) => s.diaryText)
+  const moodSignal = useStore((s) => s.moodSignal)
+  const diarySeed = useStore((s) => s.diarySeed)
+  const regenerateDiary = useStore((s) => s.regenerateDiary)
 
   const env = room?.environment
   const tempRule = rules.find((r) => r.trigger === 'temp_above' && r.enabled)
   const tempHigh = env && tempRule && env.temperature >= (tempRule.threshold ?? 29)
-  const sum = summarizeDay(events, home)
-  const recent = events.slice(0, 3)
+  // 仅统计当前宠物的事件：首页所有卡片都围绕被选中的宠物
+  const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
+  const sum = summarizeDay(petEvents, home)
+  const recent = petEvents.slice(0, 3)
+  // AI 日记：由该宠物当日真实事件生成（可换一条）
+  const diary = buildDiary(sum, moodSignal, diarySeed)
   // 状态分：由当日真实事件推导（透明可解释），而非写死
   const score = Math.max(
     40,
@@ -68,6 +74,26 @@ export function HomePage() {
             </div>
             <div className="mt-2 text-sm opacity-90">{behaviorMeta[pet.behavior]}</div>
             <div className="mt-4 flex items-center gap-1.5 text-sm opacity-90"><span className="inline-block h-2 w-2 rounded-full bg-emerald-300" /> 在线 · 项圈 {pet.collarBattery}%</div>
+
+            {/* AI 宠物日记：放在首卡醒目位置，按当前宠物真实事件生成 */}
+            <div className="relative z-[3] mt-5 max-w-[60%] rounded-2xl border border-white/25 bg-white/12 p-4 backdrop-blur max-[1000px]:max-w-full">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white/85">
+                  <Icon name="diary" size={14} /> {pet.name}的今日日记
+                </span>
+                <button
+                  className="rounded-full border border-white/35 px-2.5 py-1 text-[11px] font-bold text-white/90 hover:bg-white/15"
+                  onClick={regenerateDiary}
+                >
+                  换一条
+                </button>
+              </div>
+              <p data-testid="home-diary" className="mt-2 text-[15px] font-semibold leading-relaxed">“{diary}”</p>
+              <div className="mt-2.5 flex items-center justify-between">
+                <span className="text-[10px] text-white/55">AI 第一人称文案，依据今日真实事件生成，非客观结论</span>
+                <button className="text-[11px] font-bold text-white underline/30 hover:opacity-80" onClick={() => goPage('records')}>完整日记 ›</button>
+              </div>
+            </div>
             <div className="absolute bottom-6 right-8 grid h-[200px] w-[200px] place-items-center rounded-full bg-[rgba(244,233,208,.92)] shadow-soft max-[1000px]:opacity-70">
               <PetSvg behavior={pet.behavior} size={150} />
             </div>
@@ -124,19 +150,16 @@ export function HomePage() {
 
           <div className="card">
             <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">今天发生了什么</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>全部踪迹</button></div>
-            {recent.map((e) => (
-              <div key={e.id} className="mb-2.5 flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3.5">
-                <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
-                <div><b className="text-sm">{e.title}</b><p className="mt-1 text-xs text-muted">{e.detail}</p></div>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-[26px] border border-[#e2e9e4] bg-gradient-to-br from-[#f0f8f4] to-[#fffaf4] p-6 shadow-softsm">
-            <span className="badge">AI 宠物日记</span>
-            <div className="my-4 text-xl font-bold leading-relaxed tracking-tight">“{diaryText}”</div>
-            <small className="text-muted">AI 拟人文案，依据今日真实轨迹/行为/互动生成，非客观事实。</small>
-            <div className="mt-4 flex gap-2"><button className="btn btn-primary" onClick={() => goPage('records')}>看完整日记</button></div>
+            {recent.length ? (
+              recent.map((e) => (
+                <div key={e.id} className="mb-2.5 flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3.5">
+                  <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
+                  <div><b className="text-sm">{e.title}</b><p className="mt-1 text-xs text-muted">{e.detail}</p></div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#d6e1db] bg-[#f7faf8] p-4 text-xs text-muted">{pet.name}今天还没有记录到事件。</div>
+            )}
           </div>
         </div>
       </div>

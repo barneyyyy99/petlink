@@ -28,7 +28,6 @@ import {
   seedRules,
 } from '@/domain/seed'
 import { camerasOf, roomHasDevice } from '@/lib/tracking'
-import { generateDiaryText } from '@/lib/diary'
 import { mockHardwareAdapter } from '@/adapters/mock'
 import { timeHM } from '@/lib/time'
 
@@ -76,7 +75,7 @@ export type StoreState = {
   lost: LostMode
   companionEnabled: boolean
   moodSignal: boolean
-  diaryText: string
+  diarySeed: number
 
   // ---- UI / 瞬态（不持久化） ----
   page: PageKey
@@ -178,7 +177,7 @@ function freshDomain() {
     lost: { active: false } as LostMode,
     companionEnabled: false,
     moodSignal: false,
-    diaryText: generateDiaryText(false, 1000),
+    diarySeed: 1,
   }
 }
 
@@ -438,7 +437,7 @@ export const useStore = create<StoreState>()(
         set({ companionEnabled: v })
         get().toast('info', v ? '已开启情绪陪伴：仅生成温和陪伴提醒，不作健康判断' : '已关闭情绪陪伴')
       },
-      regenerateDiary: () => set((s) => ({ diaryText: generateDiaryText(s.moodSignal, Date.now()) })),
+      regenerateDiary: () => set((s) => ({ diarySeed: s.diarySeed + 1 })),
 
       setLost: (active) => {
         const s = get()
@@ -496,7 +495,7 @@ export const useStore = create<StoreState>()(
         lost: s.lost,
         companionEnabled: s.companionEnabled,
         moodSignal: s.moodSignal,
-        diaryText: s.diaryText,
+        diarySeed: s.diarySeed,
       }),
       migrate: (persisted: any, version) => {
         // schema 版本不一致时丢弃旧数据，回到 seed，避免结构错乱
@@ -683,7 +682,7 @@ function initComplexActions() {
 
     triggerLowMood: () => {
       const s = get()
-      set({ moodSignal: true, diaryText: generateDiaryText(true, Date.now()) })
+      set({ moodSignal: true, diarySeed: get().diarySeed + 1 })
       s.addEvent({ type: 'companion', title: `${s.pet.name}发来陪伴提醒`, detail: '“带我出去走走吧？” · 情绪陪伴已触发', petId: s.activePetId, roomId: s.pet.roomId })
       s.toast('info', '已生成宠物口吻陪伴提醒：带我出去走走吧～')
     },
@@ -740,7 +739,7 @@ export type PersistSlice = Pick<
   | 'lost'
   | 'companionEnabled'
   | 'moodSignal'
-  | 'diaryText'
+  | 'diarySeed'
 >
 
 export function getSnapshot(): PersistSlice {
@@ -760,7 +759,7 @@ export function getSnapshot(): PersistSlice {
     lost: s.lost,
     companionEnabled: s.companionEnabled,
     moodSignal: s.moodSignal,
-    diaryText: s.diaryText,
+    diarySeed: s.diarySeed,
   }
 }
 

@@ -45,21 +45,37 @@ export function roomShare(events: PetEvent[], home: HomeMap): { roomName: string
   return roomVisits.map((r) => ({ roomName: r.roomName, pct: Math.round((r.count / total) * 100) }))
 }
 
-const NORMAL_DIARY = [
-  '你今天开会好多，我叫了你好几次。晚上能不能早点回来？',
-  '我在阳台晒了好久太阳，还认真吃完了两顿饭。',
-  '下午有点无聊，我把客厅和卧室来回巡视了三遍。',
-  '你不在的时候，我先睡了一觉，又跑去看了看窗外。',
-]
-
-const LOW_MOOD_DIARY = [
-  '今天听起来你有点没精神。带我出去走走吧？我今天也想多活动一会儿 🐾',
-  '你今天说话听起来有点累，我已经在门口等你了。我们晚点出去走走？',
-  '我今天找了你好几次。要不要先看看我，再决定晚上去哪里散步？',
-]
-
-/** 第一人称 AI 文案（拟人化，需与客观摘要视觉区分） */
-export function generateDiaryText(lowMood: boolean, seed = Date.now()): string {
-  const arr = lowMood ? LOW_MOOD_DIARY : NORMAL_DIARY
-  return arr[Math.floor((seed / 1000) % arr.length)]
+/** 取某只宠物的事件：带 petId 的按 petId 归属；历史遗留未标注的归到主宠物 */
+export function eventsForPet(events: PetEvent[], petId: string, primaryPetId?: string): PetEvent[] {
+  return events.filter((e) => (e.petId ?? primaryPetId) === petId)
 }
+
+const pick = <T,>(arr: T[], seed: number): T => arr[Math.abs(Math.floor(seed)) % arr.length]
+
+/**
+ * 第一人称 AI 日记：由该宠物当日真实事件摘要生成（措辞拟人，事实部分完全来自数据）。
+ * lowMood 为「情绪陪伴」被触发时的温和基调；seed 用于「换一条」在等价措辞间切换。
+ */
+export function buildDiary(s: DiarySummary, lowMood: boolean, seed = 0): string {
+  const facts: string[] = []
+  if (s.roomVisits.length) facts.push(`在${s.roomVisits[0].roomName}待的时间最久`)
+  if (s.eats) facts.push(`吃了 ${s.eats} 顿饭`)
+  if (s.drinks) facts.push(`喝了 ${s.drinks} 次水`)
+  if (s.plays) facts.push(`玩了 ${s.plays} 回`)
+  if (s.roomChanges) facts.push(`在家里转了 ${s.roomChanges} 趟`)
+
+  const openers = lowMood
+    ? ['今天家里有点安静，', '你今天好像挺忙的，', '我自己待了一会儿，']
+    : ['今天过得挺充实的，', '又是元气满满的一天，', '今天我挺开心的，']
+  const body = facts.length ? `我${facts.slice(0, 4).join('，')}。` : '今天比较安静，大部分时间都在休息。'
+  const ownerLine =
+    s.ownerInteractions > 0
+      ? `你还远程陪了我 ${s.ownerInteractions} 次，我都感受到啦。`
+      : '今天还没顾上陪我，有空来看看我呀。'
+  const closers = lowMood
+    ? ['晚上能早点回来吗？我想你了 🐾', '要不要带我出去走走？', '记得回家抱抱我。']
+    : ['晚上等你回家！', '想你了，早点回来呀～', '今天也要开开心心哦。']
+
+  return `${pick(openers, seed)}${body}${ownerLine}${pick(closers, seed + 1)}`
+}
+
