@@ -207,11 +207,11 @@ export function LiveMap() {
                         setDeviceControlTarget({ deviceId: did })
                       }}
                     >
-                      <circle r={24} fill="rgba(255,255,255,.95)" stroke="#cfe0d8" strokeWidth={2} />
-                      <g style={{ pointerEvents: 'none' }}>
+                      {/* 直接用设备本身形象，不加圆框 */}
+                      <g transform="scale(1.25)" style={{ pointerEvents: 'none', filter: 'drop-shadow(0 2px 3px rgba(40,70,60,.22))' }}>
                         <DeviceGlyph type={dev.type} />
                       </g>
-                      <text y={40} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
+                      <text y={34} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
                         {dev.name.replace(/^(客厅|卧室|书房|阳台|餐厅)/, '')}
                       </text>
                     </g>
