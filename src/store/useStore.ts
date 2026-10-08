@@ -89,6 +89,8 @@ export type StoreState = {
   transitionRoute: TransitionRoute
   walkIndex: number
   activeCameraId: string | null
+  /** 地图上的摄像头观看浮窗是否打开（复用：双击摄像头图标 / 宠物气泡“看看它”都走这里） */
+  cameraFloatOpen: boolean
   selectedEvent: PetEvent | null
   deviceControlTarget: DeviceControlTarget
   editingRuleId: string | null
@@ -116,6 +118,9 @@ export type StoreState = {
   resolveCameraId: (roomId: string) => string | null
   setActiveCamera: (deviceId: string) => void
   openCamera: (video?: boolean) => void
+  /** 打开摄像头浮窗：传 cameraId 看指定摄像头；不传则看离当前宠物最近的摄像头 */
+  openCameraFloat: (cameraId?: string, video?: boolean) => void
+  closeCameraFloat: () => void
 
   addDevice: (d: Omit<Device, 'id'>) => string
   updateDevice: (id: string, patch: Partial<Device>) => void
@@ -210,6 +215,7 @@ export const useStore = create<StoreState>()(
       transitionRoute: null,
       walkIndex: 0,
       activeCameraId: 'dev_cam_living',
+      cameraFloatOpen: false,
       selectedEvent: null,
       deviceControlTarget: null,
       editingRuleId: null,
@@ -278,6 +284,14 @@ export const useStore = create<StoreState>()(
     set({ activeCameraId: id, modal: 'camera' })
     if (video) window.setTimeout(() => get().toast('info', '已向最近智能屏发送视频互动邀请'), 400)
   },
+
+  openCameraFloat: (cameraId, video) => {
+    const id = cameraId ?? get().resolveCameraId(get().pet.roomId)
+    set({ activeCameraId: id, cameraFloatOpen: true })
+    if (video) window.setTimeout(() => get().toast('info', '已向最近智能屏发送视频互动邀请'), 400)
+  },
+
+  closeCameraFloat: () => set({ cameraFloatOpen: false }),
 
   setActivePet: (id) =>
     set((s) => {
@@ -445,6 +459,7 @@ export const useStore = create<StoreState>()(
           walkIndex: 0,
           activeCameraId: 'dev_cam_living',
           modal: null,
+          cameraFloatOpen: false,
           selectedEvent: null,
           deviceControlTarget: null,
         })

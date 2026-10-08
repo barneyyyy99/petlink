@@ -2,6 +2,7 @@ import { useStore } from '@/store/useStore'
 import { LiveMap } from '@/components/map/LiveMap'
 import { TrackingCard } from '@/components/map/TrackingCard'
 import { SuggestionCard } from '@/components/map/SuggestionCard'
+import { CameraFloat } from '@/components/map/CameraFloat'
 import { roomShare } from '@/lib/diary'
 import type { MapMode } from '@/store/useStore'
 
@@ -59,6 +60,7 @@ export function MapPage() {
         <LiveMap />
         {mapMode === 'live' && <TrackingCard />}
         {mapMode === 'live' && <SuggestionCard />}
+        <CameraFloat />
         {mapMode === 'history' && (
           <div className="absolute right-6 top-6 z-[9] w-[240px] rounded-[20px] border border-[#dce6e1] bg-white/95 p-4 shadow-softsm">
             <b className="text-sm">今日停留热点</b>

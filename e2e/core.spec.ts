@@ -149,3 +149,23 @@ test('账号入口可打开账号与云端同步弹层', async ({ page }) => {
   const local = await page.getByTestId('auth-modal').getByText('云端未配置').count()
   expect(cloud + local).toBeGreaterThan(0)
 })
+
+test('双击地图摄像头图标打开可观看浮窗并可关闭', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('live-map-svg').waitFor()
+  await page.getByTestId('map-camera').first().dblclick({ force: true })
+  await expect(page.getByTestId('camera-float')).toBeVisible()
+  await page.getByTestId('camera-float-close').click()
+  await expect(page.getByTestId('camera-float')).toBeHidden()
+})
+
+test('宠物气泡“看看它”复用同一摄像头浮窗（看最近摄像头）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('pet-avatar').click({ force: true })
+  await expect(page.getByTestId('avatar-popover')).toBeVisible()
+  await page.getByTestId('avatar-popover').getByRole('button', { name: /看看它/ }).click()
+  await expect(page.getByTestId('camera-float')).toBeVisible()
+  await expect(page.getByTestId('camera-float')).toHaveCount(1)
+})

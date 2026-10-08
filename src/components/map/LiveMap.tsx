@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
 import { floorColor, WALL } from './furniture'
@@ -118,10 +118,12 @@ export function LiveMap() {
   const events = useStore((s) => s.events)
   const openModal = useStore((s) => s.openModal)
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
-  const openCamera = useStore((s) => s.openCamera)
+  const openCameraFloat = useStore((s) => s.openCameraFloat)
   const sendCommand = useStore((s) => s.sendCommand)
   const [popover, setPopover] = useState<string | null>(null)
   const [wander, setWander] = useState<Record<string, { x: number; y: number }>>({})
+  // 区分设备图标的单击（打开控制）与双击（摄像头打开浮窗）
+  const clickTimer = useRef<number | null>(null)
 
   // 空闲时宠物在房间内轻微游走，让地图更“活”
   useEffect(() => {
@@ -236,13 +238,31 @@ export function LiveMap() {
                   return (
                     <g
                       key={did}
+                      data-testid={dev.type === 'camera' ? 'map-camera' : undefined}
                       transform={`translate(${dx} ${dy})`}
                       style={{ cursor: 'pointer' }}
                       onClick={(e) => {
                         e.stopPropagation()
-                        setDeviceControlTarget({ deviceId: did })
+                        // 延迟执行，若紧接着是双击则取消（避免单击的控制弹层打断双击）
+                        if (clickTimer.current) window.clearTimeout(clickTimer.current)
+                        clickTimer.current = window.setTimeout(() => {
+                          setDeviceControlTarget({ deviceId: did })
+                          clickTimer.current = null
+                        }, 240)
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation()
+                        if (clickTimer.current) {
+                          window.clearTimeout(clickTimer.current)
+                          clickTimer.current = null
+                        }
+                        // 双击摄像头：打开浮窗观看该摄像头画面
+                        if (dev.type === 'camera') openCameraFloat(did)
                       }}
                     >
+                      {dev.type === 'camera' && <title>双击查看画面</title>}
+                      {/* 透明命中区：让整块设备（图标+名称）可点，图标本身 pointerEvents:none */}
+                      <rect x={-22} y={-20} width={44} height={60} fill="#000" fillOpacity={0} style={{ pointerEvents: 'all' }} />
                       {/* 直接用设备本身形象，不加圆框 */}
                       <g transform="scale(1.25)" style={{ pointerEvents: 'none', filter: 'drop-shadow(0 2px 3px rgba(40,70,60,.22))' }}>
                         <DeviceGlyph type={dev.type} />
@@ -388,10 +408,10 @@ export function LiveMap() {
           const speaker = roomDevs.find((d) => d.type === 'speaker')
           const feeder = devices.find((d) => d.type === 'feeder')
           const actions: { label: string; onClick: () => void }[] = [
-            { label: '👁 看看它', onClick: () => openCamera() },
+            { label: '👁 看看它', onClick: () => openCameraFloat() },
             { label: '🔊 叫它', onClick: () => sendCommand(speaker?.id ?? p.id, `呼叫${p.name}`) },
             { label: '🎙 主人声音', onClick: () => sendCommand(speaker?.id ?? p.id, '播放主人声音') },
-            { label: '🎬 视频互动', onClick: () => openCamera(true) },
+            { label: '🎬 视频互动', onClick: () => openCameraFloat(undefined, true) },
             { label: '🍽 投喂', onClick: () => sendCommand(feeder?.id ?? p.id, '远程投喂 8g') },
             { label: '✦ 逗宠', onClick: () => sendCommand(p.id, '启动逗宠模组') },
           ]
@@ -419,7 +439,7 @@ export function LiveMap() {
               {/* 实时小画面缩略 */}
               <button
                 className="relative mt-2 flex h-[86px] w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]"
-                onClick={() => openCamera()}
+                onClick={() => openCameraFloat()}
                 aria-label="查看实时画面"
               >
                 <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[9px] font-bold text-white">
