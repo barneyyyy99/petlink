@@ -34,6 +34,36 @@ export type RoomEnvironment = {
 /** 房间语义类型，仅影响默认家具示意与图标，绝不写死房间名逻辑 */
 export type RoomKind = 'living' | 'bedroom' | 'study' | 'balcony' | 'dining' | 'custom'
 
+export type FurnitureType =
+  | 'sofa'
+  | 'coffee_table'
+  | 'tv'
+  | 'rug'
+  | 'bed'
+  | 'nightstand'
+  | 'wardrobe'
+  | 'desk'
+  | 'chair'
+  | 'bookshelf'
+  | 'dining_table'
+  | 'cabinet'
+  | 'fridge'
+  | 'plant'
+  | 'cat_tree'
+  | 'litter'
+  | 'rug_round'
+
+/** 一件家具：绝对地图坐标 (x,y 左上角) + 尺寸 + 旋转角(度) */
+export type FurnitureItem = {
+  id: string
+  type: FurnitureType
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation?: number
+}
+
 export type Room = {
   id: string
   name: string
@@ -41,6 +71,8 @@ export type Room = {
   polygon: Point[]
   /** 绑定到该房间的 deviceId 列表（Device 亦持有 roomId，双向一致） */
   devices: string[]
+  /** 可编辑家具；缺省时按房间类型自动生成示意 */
+  furniture?: FurnitureItem[]
   environment: RoomEnvironment
 }
 

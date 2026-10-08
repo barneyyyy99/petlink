@@ -1,6 +1,7 @@
 import { useStore } from '@/store/useStore'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
-import { FurnitureNodes, floorColor, WALL } from './furniture'
+import { floorColor, WALL } from './furniture'
+import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
 import { PetSvg } from '@/components/PetSvg'
 import type { Point, PetBehavior } from '@/domain/types'
@@ -45,6 +46,36 @@ function doorFor(polygon: Point[]) {
   const r = half * 2
   const arc = `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x1 + nx * r} ${y1 + ny * r}`
   return { x1, y1, x2, y2, arc }
+}
+
+type Win = { x1: number; y1: number; x2: number; y2: number }
+/** 外墙上的窗户段：找到位于户型外轮廓上的房间边，取中段作为窗 */
+function windowsFor(rooms: { polygon: Point[] }[]): Win[] {
+  const all = rooms.flatMap((r) => r.polygon)
+  if (!all.length) return []
+  const minX = Math.min(...all.map((p) => p.x))
+  const maxX = Math.max(...all.map((p) => p.x))
+  const minY = Math.min(...all.map((p) => p.y))
+  const maxY = Math.max(...all.map((p) => p.y))
+  const eps = 2
+  const out: Win[] = []
+  for (const r of rooms) {
+    for (let i = 0; i < r.polygon.length; i++) {
+      const a = r.polygon[i]
+      const b = r.polygon[(i + 1) % r.polygon.length]
+      const onV = (Math.abs(a.x - minX) < eps && Math.abs(b.x - minX) < eps) || (Math.abs(a.x - maxX) < eps && Math.abs(b.x - maxX) < eps)
+      const onH = (Math.abs(a.y - minY) < eps && Math.abs(b.y - minY) < eps) || (Math.abs(a.y - maxY) < eps && Math.abs(b.y - maxY) < eps)
+      if (!onV && !onH) continue
+      const len = Math.hypot(b.x - a.x, b.y - a.y)
+      if (len < 150) continue
+      const ux = (b.x - a.x) / len
+      const uy = (b.y - a.y) / len
+      const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      const half = Math.min(100, len * 0.4) / 2
+      out.push({ x1: m.x - ux * half, y1: m.y - uy * half, x2: m.x + ux * half, y2: m.y + uy * half })
+    }
+  }
+  return out
 }
 
 export function LiveMap() {
@@ -132,16 +163,21 @@ export function LiveMap() {
                     <path d={door.arc} fill="none" stroke="#c3d0ca" strokeWidth={2} style={{ vectorEffect: 'non-scaling-stroke' }} />
                   </>
                 )}
-                <FurnitureNodes room={r} />
+                {/* 家具（来自可编辑数据，缺省回退按房型生成） */}
+                {(r.furniture ?? defaultFurniture(r)).map((f) => (
+                  <g key={f.id} transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`} style={{ pointerEvents: 'none' }}>
+                    {drawFurniture(f.type, f.w, f.h)}
+                  </g>
+                ))}
                 <text x={b.x + 14} y={b.y + 24} fontSize={15} fontWeight={800} fill="#7c8d87" style={{ pointerEvents: 'none' }}>
                   {r.name}
                 </text>
-                {/* 设备点位（小度产品风格图标） */}
+                {/* 设备点位（小度产品风格图标 + 名称） */}
                 {r.devices.map((did, idx) => {
                   const dev = devices.find((d) => d.id === did)
                   if (!dev) return null
                   const dx = b.x + b.w * (0.22 + (idx % 3) * 0.28)
-                  const dy = b.y + b.h * (idx < 3 ? 0.2 : 0.8)
+                  const dy = b.y + b.h * (idx < 3 ? 0.22 : 0.8)
                   return (
                     <g
                       key={did}
@@ -152,16 +188,26 @@ export function LiveMap() {
                         setDeviceControlTarget({ deviceId: did })
                       }}
                     >
-                      <circle r={21} fill="rgba(255,255,255,.92)" stroke="#dbe5e0" strokeWidth={1.5} />
-                      <g transform="scale(0.9)" style={{ pointerEvents: 'none' }}>
+                      <circle r={24} fill="rgba(255,255,255,.95)" stroke="#cfe0d8" strokeWidth={2} />
+                      <g style={{ pointerEvents: 'none' }}>
                         <DeviceGlyph type={dev.type} />
                       </g>
+                      <text y={40} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
+                        {dev.name.replace(/^(客厅|卧室|书房|阳台|餐厅)/, '')}
+                      </text>
                     </g>
                   )
                 })}
               </g>
             )
           })}
+          {/* 外墙窗户 */}
+          {windowsFor(rooms).map((w, i) => (
+            <g key={`win${i}`}>
+              <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke="#dfeaf2" strokeWidth={10} strokeLinecap="round" style={{ vectorEffect: 'non-scaling-stroke' }} />
+              <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke="#8fb6d6" strokeWidth={3} strokeLinecap="round" style={{ vectorEffect: 'non-scaling-stroke' }} strokeDasharray="2 10" />
+            </g>
+          ))}
         </svg>
 
         {/* Avatar 覆盖层：每只宠物一个（同房间自动错位），点击选中并打开详情 */}

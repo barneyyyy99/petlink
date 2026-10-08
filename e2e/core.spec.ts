@@ -120,6 +120,17 @@ test('多宠物：切换宠物后追踪卡随之更新', async ({ page }) => {
   await expect(page.getByTestId('tracking-room')).toHaveText('卧室')
 })
 
+test('户型编辑器可布置家具（添加后可删除）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('edit-map-btn').click()
+  await page.getByTestId('room-row').first().click()
+  await page.getByTestId('tool-furniture').click()
+  await page.getByRole('button', { name: '＋ 沙发' }).click()
+  // 新增家具会被选中 → 出现删除按钮
+  await expect(page.getByTestId('furn-delete')).toBeVisible()
+})
+
 test('账号入口可打开账号与云端同步弹层', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('account-btn').click()

@@ -8,8 +8,9 @@ import type {
   Room,
 } from './types'
 import { makeId, rectPoints } from './geometry'
+import { defaultFurniture } from '@/components/map/furnitureLib'
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 function room(
   id: string,
@@ -20,7 +21,7 @@ function room(
   temperature: number,
   humidity: number,
 ): Room {
-  return {
+  const r: Room = {
     id,
     name,
     kind,
@@ -28,6 +29,8 @@ function room(
     devices,
     environment: { temperature, humidity, updatedAt: Date.now() },
   }
+  r.furniture = defaultFurniture(r)
+  return r
 }
 
 // 固定 id，便于 seed 设备双向绑定
@@ -68,11 +71,12 @@ export function seedHomeMap(): HomeMap {
     name: '我的家',
     version: 1,
     rooms: [
-      room(R.living, '客厅', 'living', rectPoints(30, 24, 470, 311), ['dev_cam_living', 'dev_spk_living', 'dev_ac_living'], 26.4, 56),
-      room(R.bedroom, '卧室', 'bedroom', rectPoints(530, 24, 440, 234), ['dev_cam_bedroom', 'dev_screen_bedroom'], 25.6, 53),
-      room(R.study, '书房', 'study', rectPoints(30, 354, 300, 222), ['dev_cam_study'], 26.8, 55),
-      room(R.balcony, '阳台', 'balcony', rectPoints(350, 354, 250, 222), ['dev_cam_balcony'], 27.5, 60),
-      room(R.dining, '餐厅', 'dining', rectPoints(620, 276, 350, 300), ['dev_feeder_dining', 'dev_water_dining', 'dev_sensor_dining'], 26.9, 58),
+      // 紧贴成一套完整户型（共享墙，无缝隙）
+      room(R.dining, '餐厅', 'dining', rectPoints(40, 40, 260, 260), ['dev_feeder_dining', 'dev_water_dining', 'dev_sensor_dining'], 26.9, 58),
+      room(R.study, '书房', 'study', rectPoints(300, 40, 220, 260), ['dev_cam_study'], 26.8, 55),
+      room(R.bedroom, '卧室', 'bedroom', rectPoints(520, 40, 440, 280), ['dev_cam_bedroom', 'dev_screen_bedroom'], 25.6, 53),
+      room(R.living, '客厅', 'living', rectPoints(40, 300, 480, 260), ['dev_cam_living', 'dev_spk_living', 'dev_ac_living'], 26.4, 56),
+      room(R.balcony, '阳台', 'balcony', rectPoints(520, 320, 440, 240), ['dev_cam_balcony'], 27.5, 60),
     ],
   }
 }

@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 import type { Point } from '@/domain/types'
 import { bounds, clampPoint, clone, rectPoints } from '@/domain/geometry'
+import { FURNITURE_META } from '@/components/map/furnitureLib'
 import type { useMapEditor } from './useMapEditor'
 
 type Editor = ReturnType<typeof useMapEditor>
 
 export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTMLImageElement | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const drag = useRef<{ action: 'rect' | 'move' | 'vertex' | null; start: Point; originPoly?: Point[]; vertex: number }>({ action: null, start: { x: 0, y: 0 }, vertex: -1 })
+  const drag = useRef<{ action: 'rect' | 'move' | 'vertex' | 'furn' | null; start: Point; originPoly?: Point[]; vertex: number; furnIdx?: number; ox?: number; oy?: number }>({ action: null, start: { x: 0, y: 0 }, vertex: -1 })
   const tempRect = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
   const { rooms, selected, tool, polyDraft } = editor
 
@@ -47,6 +48,18 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
       ctx.stroke()
       polyDraft.forEach((p) => { ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fillStyle = '#2e7f75'; ctx.fill() })
     }
+    // 家具编辑层
+    if (tool === 'furniture' && selected >= 0 && rooms[selected]) {
+      editor.furnOf(rooms[selected]).forEach((f, i) => {
+        const on = i === editor.selectedFurn
+        ctx.fillStyle = on ? 'rgba(76,160,146,.28)' : 'rgba(170,195,186,.4)'
+        ctx.strokeStyle = on ? '#2e7f75' : '#9bb0a6'
+        ctx.lineWidth = on ? 3 : 1.6
+        ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.fill(); ctx.stroke()
+        ctx.fillStyle = '#45544e'; ctx.font = 'bold 13px sans-serif'
+        ctx.fillText(FURNITURE_META[f.type].label, f.x + 5, f.y + 16)
+      })
+    }
   }
 
   useEffect(draw)
@@ -57,6 +70,22 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
     drag.current.start = p
     if (tool === 'poly') {
       editor.setPolyDraft([...polyDraft, p])
+      return
+    }
+    // 家具编辑：命中选中房间内的家具 → 选中并拖动
+    if (tool === 'furniture') {
+      if (selected < 0) { editor.setSelectedFurn(-1); return }
+      const list = editor.furnOf(rooms[selected])
+      let hit = -1
+      for (let i = list.length - 1; i >= 0; i--) {
+        const f = list[i]
+        if (p.x >= f.x && p.x <= f.x + f.w && p.y >= f.y && p.y <= f.y + f.h) { hit = i; break }
+      }
+      editor.setSelectedFurn(hit)
+      if (hit >= 0) {
+        editor.snapshot()
+        drag.current = { action: 'furn', start: p, vertex: -1, furnIdx: hit, ox: p.x - list[hit].x, oy: p.y - list[hit].y }
+      }
       return
     }
     // 顶点命中
@@ -80,6 +109,10 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
   const onMove = (e: React.PointerEvent) => {
     if (!drag.current.action) return
     const p = toCanvas(e)
+    if (drag.current.action === 'furn') {
+      editor.moveFurn(drag.current.furnIdx!, p.x - (drag.current.ox ?? 0), p.y - (drag.current.oy ?? 0))
+      return
+    }
     if (drag.current.action === 'rect') {
       tempRect.current = { x: Math.min(drag.current.start.x, p.x), y: Math.min(drag.current.start.y, p.y), w: Math.abs(p.x - drag.current.start.x), h: Math.abs(p.y - drag.current.start.y) }
       draw()
@@ -122,6 +155,7 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
         onPointerUp={onUp}
         onDoubleClick={(e) => {
           if (tool === 'poly') { editor.finishPoly(); return }
+          if (tool === 'furniture') return
           // 选中房间时，双击某个顶点即可删除（≥3 保护）
           if (selected < 0) return
           const p = toCanvas(e)
