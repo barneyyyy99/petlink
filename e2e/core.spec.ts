@@ -6,6 +6,18 @@ async function gotoFresh(page: Page) {
   await expect(page.getByTestId('nav-home')).toBeVisible()
 }
 
+test('寻宠卡片按资料生成并可上传照片', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('demo-btn').click()
+  await page.getByTestId('demo-panel').waitFor()
+  await page.getByRole('button', { name: '围栏告警' }).click()
+  await expect(page.getByTestId('lost-modal')).toBeVisible()
+  await page.getByRole('button', { name: /放大预览/ }).click()
+  await expect(page.getByTestId('share-card-modal')).toBeVisible()
+  await expect(page.getByTestId('share-card-modal')).toContainText('依据宠物资料')
+  await expect(page.getByTestId('share-upload-photo')).toBeVisible()
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
@@ -96,6 +108,20 @@ test('铃铛找人进入对话框并可发送 + 立即看它', async ({ page }) 
   await page.getByTestId('chat-send').click()
   await expect(page.getByTestId('observe-after-send')).toBeVisible({ timeout: 3000 })
   await page.getByTestId('observe-after-send').getByRole('button').click()
+  await expect(page.getByTestId('camera-modal')).toBeVisible()
+})
+
+test('宠物主动找人展示完整链路（设备播报→推送主人→可回应）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-me').click()
+  await page.getByRole('button', { name: /宠物对话框/ }).click()
+  await page.getByTestId('bell-btn').click()
+  const chain = page.getByTestId('find-owner-chain')
+  await expect(chain).toBeVisible()
+  await expect(chain).toContainText('播报提示')
+  await expect(chain).toContainText('已推送到你的手机')
+  await expect(page.getByTestId('chain-peek')).toBeVisible({ timeout: 4000 })
+  await page.getByTestId('chain-peek').click()
   await expect(page.getByTestId('camera-modal')).toBeVisible()
 })
 

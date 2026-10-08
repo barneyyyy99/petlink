@@ -108,6 +108,12 @@ export type PetState = {
   lastUpdatedAt: number
   trackingSources: TrackingSource[]
   collarBattery: number
+  /** 资料：用于寻宠卡片等（可选） */
+  species?: string
+  furColor?: string
+  collarColor?: string
+  /** 宠物照片 dataURL（可上传；缺省用形象） */
+  photo?: string
 }
 
 export type PetEventType =
@@ -228,6 +234,17 @@ export type LostMode = {
   active: boolean
   lastRoomId?: string
   lastUpdatedAt?: number
+}
+
+// ---- 宠物主动找人：拨铃 → 设备播报 → 推送主人 → 等待回应 的完整链路 ----
+export type FindOwnerState = {
+  active: boolean
+  /** 0 空闲；1 宠物拨铃；2 设备播报；3 已推送主人；4 等待/已回应 */
+  step: number
+  deviceName: string
+  roomName: string
+  petName: string
+  startedAt?: number
 }
 
 export type ToastKind = 'success' | 'info' | 'warn' | 'error'

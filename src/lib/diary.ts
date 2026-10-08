@@ -50,6 +50,57 @@ export function eventsForPet(events: PetEvent[], petId: string, primaryPetId?: s
   return events.filter((e) => (e.petId ?? primaryPetId) === petId)
 }
 
+export type ActivityDigest = {
+  eats: number
+  drinks: number
+  plays: number
+  roomChanges: number
+  owner: number
+  /** 估算活跃时长（分钟） */
+  activeMinutes: number
+  /** 估算休息时长（分钟） */
+  restMinutes: number
+  lastActiveAt: number | null
+}
+
+const ACTIVE_TYPES = new Set(['room_change', 'play', 'run', 'eat', 'drink', 'owner_interaction', 'bell', 'sound'])
+const REST_GAP_MIN = 30
+
+/** 由真实事件时间线推导活动/休息时长（估算）+ 关键行为计数。events 应为单只宠物的事件。 */
+export function activityDigest(events: PetEvent[], now: number): ActivityDigest {
+  let eats = 0, drinks = 0, plays = 0, roomChanges = 0, owner = 0
+  for (const e of events) {
+    if (e.type === 'eat') eats += 1
+    else if (e.type === 'drink') drinks += 1
+    else if (e.type === 'play') plays += 1
+    else if (e.type === 'room_change') roomChanges += 1
+    else if (e.type === 'owner_interaction') owner += 1
+  }
+  const acts = events.filter((e) => ACTIVE_TYPES.has(e.type)).sort((a, b) => a.timestamp - b.timestamp)
+  let active = 0, rest = 0
+  for (let i = 1; i < acts.length; i++) {
+    const gap = (acts[i].timestamp - acts[i - 1].timestamp) / 60000
+    if (gap <= REST_GAP_MIN) active += gap
+    else rest += gap
+  }
+  const lastActiveAt = acts.length ? acts[acts.length - 1].timestamp : null
+  if (lastActiveAt) {
+    const tail = (now - lastActiveAt) / 60000
+    if (tail > 0) rest += tail
+  }
+  return { eats, drinks, plays, roomChanges, owner, activeMinutes: Math.round(active), restMinutes: Math.round(rest), lastActiveAt }
+}
+
+/** 分钟 → “约 Xh Ym” / “约 N 分钟” */
+export function fmtDuration(min: number): string {
+  if (min < 1) return '不到 1 分钟'
+  const h = Math.floor(min / 60)
+  const m = Math.round(min % 60)
+  if (h <= 0) return `约 ${m} 分钟`
+  if (m === 0) return `约 ${h} 小时`
+  return `约 ${h} 小时 ${m} 分`
+}
+
 const pick = <T,>(arr: T[], seed: number): T => arr[Math.abs(Math.floor(seed)) % arr.length]
 
 /**

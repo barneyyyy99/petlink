@@ -1,5 +1,5 @@
 import { useStore } from '@/store/useStore'
-import { summarizeDay, buildDiary, eventsForPet } from '@/lib/diary'
+import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration } from '@/lib/diary'
 
 export function RecordsPage() {
   const openModal = useStore((s) => s.openModal)
@@ -20,6 +20,7 @@ export function RecordsPage() {
   const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
   const sum = summarizeDay(petEvents, home)
   const diary = buildDiary(sum, moodSignal, diarySeed)
+  const digest = activityDigest(petEvents, Date.now())
 
   return (
     <div>
@@ -63,6 +64,22 @@ export function RecordsPage() {
           </div>
           <div data-testid="diary-text" className="my-4 text-lg font-bold leading-relaxed tracking-tight">“{diary}”</div>
           <small className="text-muted">↑ AI 第一人称文案，依据{pet.name}今日真实事件生成（非客观结论）。以下为客观陪伴线索与设置。</small>
+
+          {/* 关联真实事件：日记不只是文字，背后是进食/活动/休息等真实数据 */}
+          <div data-testid="diary-facts" className="mt-3.5 rounded-2xl border border-[#e0e8e4] bg-white/70 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <b className="text-[11px] text-[#4c5f59]">日记背后的真实事件</b>
+              <span className="text-[9px] text-muted">由今日事件时间线推导</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <Fact v={`${digest.eats + digest.drinks} 次`} s="进食 / 饮水" />
+              <Fact v={fmtDuration(digest.activeMinutes)} s="活动时长" />
+              <Fact v={fmtDuration(digest.restMinutes)} s="休息时长" />
+              <Fact v={`${digest.plays} 次`} s="玩耍" />
+              <Fact v={`${digest.roomChanges} 趟`} s="跨房间" />
+              <Fact v={`${digest.owner} 次`} s="远程陪伴" />
+            </div>
+          </div>
 
           <div data-testid="emotion-signal" className={`mt-3.5 rounded-2xl border p-3 text-[11px] leading-relaxed ${moodSignal ? 'border-[#f2dcc5] bg-[#fff2e4] text-[#8b623f]' : 'border-[#e0e8e4] bg-[#f3f7f5] text-[#61736d]'}`}>
             <b>主人陪伴线索：{moodSignal ? '触发一条温和提醒' : '暂无提醒'}</b>
@@ -115,5 +132,14 @@ function RecordCard({ ico, title, desc, onClick }: { ico: string; title: string;
       <h4 className="my-2 text-base font-bold">{title}</h4>
       <p className="m-0 text-xs leading-relaxed text-muted">{desc}</p>
     </button>
+  )
+}
+
+function Fact({ v, s }: { v: string; s: string }) {
+  return (
+    <div className="rounded-xl bg-[#f2f7f4] px-2 py-2">
+      <b className="block truncate text-xs text-[#2f473f]">{v}</b>
+      <span className="text-[10px] text-muted">{s}</span>
+    </div>
   )
 }

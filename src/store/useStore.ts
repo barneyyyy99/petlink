@@ -6,6 +6,7 @@ import type {
   Device,
   DeviceType,
   Fence,
+  FindOwnerState,
   HandoffState,
   HomeMap,
   LostMode,
@@ -73,6 +74,7 @@ export type StoreState = {
   chat: ChatMessage[]
   voice: VoicePreset | null
   lost: LostMode
+  findOwner: FindOwnerState
   companionEnabled: boolean
   moodSignal: boolean
   diarySeed: number
@@ -113,6 +115,7 @@ export type StoreState = {
   addPet: (name: string) => void
   removePet: (id: string) => void
   renamePet: (id: string, name: string) => void
+  setPetPhoto: (id: string, photo: string | undefined) => void
   setRoomEnvironment: (roomId: string, temperature: number, humidity: number) => void
   resolveCameraId: (roomId: string) => string | null
   setActiveCamera: (deviceId: string) => void
@@ -144,6 +147,7 @@ export type StoreState = {
 
   sendChat: (text: string, kind?: ChatMessage['kind']) => void
   triggerBell: () => void
+  clearFindOwner: () => void
 
   saveVoicePreset: (preset: VoicePreset) => void
 
@@ -175,6 +179,7 @@ function freshDomain() {
     chat: seedChat(),
     voice: null as VoicePreset | null,
     lost: { active: false } as LostMode,
+    findOwner: { active: false, step: 0, deviceName: '', roomName: '', petName: '' } as FindOwnerState,
     companionEnabled: false,
     moodSignal: false,
     diarySeed: 1,
@@ -337,6 +342,13 @@ export const useStore = create<StoreState>()(
       return { pets, pet }
     }),
 
+  setPetPhoto: (id, photo) =>
+    set((s) => {
+      const pets = s.pets.map((p) => (p.id === id ? { ...p, photo } : p))
+      const pet = pets.find((p) => p.id === s.activePetId) ?? pets[0]
+      return { pets, pet }
+    }),
+
   setBehavior: (b) => {
     set((s) => patchActive(s, (p) => ({ ...p, behavior: b, lastUpdatedAt: Date.now() })))
   },
@@ -461,6 +473,7 @@ export const useStore = create<StoreState>()(
           cameraFloatOpen: false,
           selectedEvent: null,
           deviceControlTarget: null,
+          findOwner: { active: false, step: 0, deviceName: '', roomName: '', petName: '' },
         })
         get().toast('success', '已恢复演示数据')
       },
@@ -472,6 +485,7 @@ export const useStore = create<StoreState>()(
       turnOnAC: async () => {},
       sendChat: () => {},
       triggerBell: () => {},
+      clearFindOwner: () => {},
       triggerLowMood: () => {},
       triggerFenceAlert: () => {},
       saveVoicePreset: () => {},
@@ -665,20 +679,54 @@ function initComplexActions() {
     },
 
     triggerBell: () => {
+      clearHandoffTimers()
       const s = get()
       const room = s.homeMap.rooms.find((r) => r.id === s.pet.roomId)
+      const roomName = room?.name ?? '当前房间'
       const name = s.pet.name
+      // 就近选择可播报设备：优先智能屏，其次音箱
+      const roomDevs = s.devices.filter((d) => d.roomId === s.pet.roomId && d.online)
+      const announcer =
+        roomDevs.find((d) => d.type === 'smart_screen') ??
+        roomDevs.find((d) => d.type === 'speaker') ??
+        s.devices.find((d) => d.type === 'smart_screen' || d.type === 'speaker')
+      const deviceName = announcer?.name ?? '最近的小度设备'
+
       const bellMsg: ChatMessage = {
         id: makeId('msg'),
         role: 'pet_event',
         kind: 'bell',
-        text: `${name}拨动了「找主人铃铛」，${room?.name ?? '当前房间'}摄像头确认${name}停留在铃铛旁。`,
+        text: `${name}拨动了「找主人铃铛」，${roomName}摄像头确认${name}停留在铃铛旁。`,
         timestamp: Date.now(),
       }
-      set({ chat: [...s.chat, bellMsg], modal: 'chat' })
-      s.addEvent({ type: 'bell', title: `${name}拨动找人铃铛`, detail: `${room?.name ?? '当前房间'}摄像头确认事件`, petId: s.activePetId, roomId: s.pet.roomId, source: ['camera'] })
+      // 第 1 步：宠物拨铃，摄像头确认
+      set({
+        chat: [...s.chat, bellMsg],
+        modal: 'chat',
+        findOwner: { active: true, step: 1, deviceName, roomName, petName: name, startedAt: Date.now() },
+      })
+      s.addEvent({ type: 'bell', title: `${name}拨动找人铃铛`, detail: `${roomName}摄像头确认事件`, petId: s.activePetId, roomId: s.pet.roomId, source: ['camera'] })
       s.toast('warn', `${name}正在找你 · 已进入宠物对话框`)
+
+      // 第 2 步：最近音箱/智能屏播报
+      handoffTimers.push(
+        window.setTimeout(() => {
+          set((st) => ({ findOwner: { ...st.findOwner, step: 2 } }))
+          get().addEvent({ type: 'device_command', title: `${deviceName}播报提示`, detail: `${deviceName}播放：“主人，我在${roomName}找你～”`, petId: get().activePetId, roomId: get().pet.roomId })
+        }, 500),
+      )
+      // 第 3 步：App 推送已送达主人
+      handoffTimers.push(
+        window.setTimeout(() => {
+          set((st) => ({ findOwner: { ...st.findOwner, step: 3 } }))
+          get().toast('info', `📲 已推送到你的手机：${name}在${roomName}找你`)
+        }, 1200),
+      )
+      // 第 4 步：等待主人回应
+      handoffTimers.push(window.setTimeout(() => set((st) => ({ findOwner: { ...st.findOwner, step: 4 } })), 1900))
     },
+
+    clearFindOwner: () => set((st) => ({ findOwner: { ...st.findOwner, active: false, step: 0 } })),
 
     triggerLowMood: () => {
       const s = get()

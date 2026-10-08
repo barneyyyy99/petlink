@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeDay, buildDiary, eventsForPet } from './diary'
+import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration } from './diary'
 import type { HomeMap, PetEvent } from '@/domain/types'
 
 const home = {
@@ -56,5 +56,33 @@ describe('buildDiary', () => {
     const sum = summarizeDay([], home)
     const text = buildDiary(sum, true, 0)
     expect(text).toMatch(/想你|走走|抱抱/)
+  })
+})
+
+describe('activityDigest / fmtDuration', () => {
+  const T = 1_000_000_000_000
+  const at = (type: PetEvent['type'], minsAgo: number): PetEvent =>
+    ({ id: Math.random().toString(36), timestamp: T - minsAgo * 60000, type, title: '', detail: '' } as PetEvent)
+
+  it('计数来自真实事件', () => {
+    const d = activityDigest([at('eat', 100), at('eat', 90), at('play', 80), at('room_change', 70), at('owner_interaction', 60)], T)
+    expect(d.eats).toBe(2)
+    expect(d.plays).toBe(1)
+    expect(d.roomChanges).toBe(1)
+    expect(d.owner).toBe(1)
+  })
+
+  it('相邻活跃事件间隔<=30min 记为活动，大间隔记为休息', () => {
+    // 事件：120、110、100 分钟前（间隔 10min，活跃 20min），之后到 now 的 100min 空档记为休息
+    const d = activityDigest([at('play', 120), at('play', 110), at('play', 100)], T)
+    expect(d.activeMinutes).toBe(20)
+    expect(d.restMinutes).toBeGreaterThanOrEqual(100)
+  })
+
+  it('fmtDuration 可读化', () => {
+    expect(fmtDuration(0.2)).toContain('不到')
+    expect(fmtDuration(45)).toBe('约 45 分钟')
+    expect(fmtDuration(60)).toBe('约 1 小时')
+    expect(fmtDuration(135)).toBe('约 2 小时 15 分')
   })
 })

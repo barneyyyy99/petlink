@@ -91,6 +91,9 @@ export function seedPet(): PetState {
     lastUpdatedAt: Date.now(),
     trackingSources: ['camera', 'ble'],
     collarBattery: 85,
+    species: '橘猫',
+    furColor: '橘白',
+    collarColor: '青绿色',
   }
 }
 
@@ -107,6 +110,9 @@ export function seedPets(): PetState[] {
       lastUpdatedAt: Date.now(),
       trackingSources: ['ble', 'imu'],
       collarBattery: 78,
+      species: '英短',
+      furColor: '蓝灰',
+      collarColor: '奶黄色',
     },
   ]
 }
