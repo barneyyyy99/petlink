@@ -6,9 +6,14 @@ async function gotoFresh(page: Page) {
   await expect(page.getByTestId('nav-home')).toBeVisible()
 }
 
-test('首页加载并显示守护对象', async ({ page }) => {
+test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
+  const switcher = page.getByTestId('home-pet-switcher')
+  await expect(switcher).toBeVisible()
+  await expect(page.getByRole('heading', { name: '毛球', level: 2 })).toBeVisible()
+  await switcher.getByRole('button', { name: '团子' }).click()
+  await expect(page.getByRole('heading', { name: '团子', level: 2 })).toBeVisible()
 })
 
 test('地图页显示实时追踪卡与客厅', async ({ page }) => {

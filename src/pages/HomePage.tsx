@@ -6,6 +6,9 @@ import { Icon, type IconName } from '@/components/Icon'
 
 export function HomePage() {
   const pet = useStore((s) => s.pet)
+  const pets = useStore((s) => s.pets)
+  const activePetId = useStore((s) => s.activePetId)
+  const setActivePet = useStore((s) => s.setActivePet)
   const room = useStore(currentRoom)
   const goPage = useStore((s) => s.goPage)
   const openCamera = useStore((s) => s.openCamera)
@@ -33,6 +36,26 @@ export function HomePage() {
       <div className="eyebrow">MON · 09:42 AM</div>
       <h1 className="my-1.5 text-3xl font-extrabold tracking-tight">早上好，Jin</h1>
       <div className="text-sm text-muted">{pet.name}正在{room?.name ?? '家里'}活动，当前一切正常。</div>
+
+      {pets.length > 1 && (
+        <div data-testid="home-pet-switcher" className="mt-4 flex flex-wrap gap-2">
+          {pets.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setActivePet(p.id)}
+              aria-pressed={p.id === activePetId}
+              className={`flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3.5 text-sm font-bold transition ${
+                p.id === activePetId ? 'border-teal bg-teal text-white' : 'border-line bg-white text-[#5d6e68] hover:border-[#cde3dc]'
+              }`}
+            >
+              <span className="grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-[#fff8e9]">
+                <PetSvg behavior={p.behavior} size={22} />
+              </span>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mt-5 grid grid-cols-[minmax(0,1.4fr)_minmax(320px,.76fr)] gap-5 max-[1000px]:grid-cols-1">
         <div>
