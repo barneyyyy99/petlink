@@ -165,6 +165,8 @@ export type TransitionRoute = {
   to: Point
   fromRoomId: string
   toRoomId: string
+  petId: string
+  path: Point[]
 } | null
 
 // ---- 虚拟围栏 ----

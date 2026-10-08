@@ -17,7 +17,7 @@ import type {
   TransitionRoute,
   VoicePreset,
 } from '@/domain/types'
-import { fitFenceRect, makeId, nearestRoomIdWith, roomCentroid } from '@/domain/geometry'
+import { buildWalkPath, fitFenceRect, makeId, nearestRoomIdWith, roomCentroid } from '@/domain/geometry'
 import {
   SCHEMA_VERSION,
   seedChat,
@@ -87,6 +87,7 @@ export type StoreState = {
   toasts: Toast[]
   handoff: HandoffState
   transitionRoute: TransitionRoute
+  walkIndex: number
   activeCameraId: string | null
   selectedEvent: PetEvent | null
   deviceControlTarget: DeviceControlTarget
@@ -207,6 +208,7 @@ export const useStore = create<StoreState>()(
       toasts: [],
       handoff: { phase: 'idle', message: '' },
       transitionRoute: null,
+      walkIndex: 0,
       activeCameraId: 'dev_cam_living',
       selectedEvent: null,
       deviceControlTarget: null,
@@ -440,6 +442,7 @@ export const useStore = create<StoreState>()(
           ...freshDomain(),
           handoff: { phase: 'idle', message: '' },
           transitionRoute: null,
+          walkIndex: 0,
           activeCameraId: 'dev_cam_living',
           modal: null,
           selectedEvent: null,
@@ -510,14 +513,20 @@ function initComplexActions() {
       clearHandoffTimers()
       const fromName = from?.name ?? '出发房间'
       const petName = s.pet.name
-      // 1) 过渡路径 + 奔跑（作用于当前选中宠物）
+      const walkPath = buildWalkPath(from, to)
+      // 1) 过渡路径（沿真实门口折线）+ 奔跑（作用于当前选中宠物）
       set({
         transitionRoute: from
-          ? { from: roomCentroid(from), to: roomCentroid(to), fromRoomId: from.id, toRoomId: to.id }
+          ? { from: roomCentroid(from), to: roomCentroid(to), fromRoomId: from.id, toRoomId: to.id, petId: s.activePetId, path: walkPath }
           : null,
+        walkIndex: 0,
         ...patchActive(s, (p) => ({ ...p, roomId, behavior: 'running', confidence: 0.9, trackingSources: ['ble', 'imu'], lastUpdatedAt: Date.now() })),
         handoff: { phase: 'lost', message: `${fromName}摄像头已失去目标`, fromRoomId: from?.id, toRoomId: to.id, startedAt: Date.now() },
       })
+      // 沿折线逐段行走
+      for (let i = 1; i < walkPath.length; i++) {
+        handoffTimers.push(window.setTimeout(() => set({ walkIndex: i }), 420 * i))
+      }
       // 2) room_change 事件
       s.addEvent({
         type: 'room_change',

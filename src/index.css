@@ -85,7 +85,7 @@ body {
 }
 
 .pet-run {
-  animation: runbob 0.35s infinite alternate;
+  animation: runbob 0.32s infinite alternate;
 }
 .pet-look {
   animation: lookbob 0.75s infinite alternate;
@@ -93,29 +93,57 @@ body {
 .pet-sleep {
   animation: breathe 1.6s infinite ease-in-out;
 }
+.pet-eat {
+  animation: nodbob 0.5s infinite ease-in-out;
+  transform-origin: 50% 80%;
+}
+.pet-play {
+  animation: jumpbob 0.55s infinite ease-in-out;
+}
 @keyframes runbob {
   from {
-    transform: translate(-50%, -54%);
+    transform: translateY(-4px);
   }
   to {
-    transform: translate(-50%, -46%);
+    transform: translateY(4px);
   }
 }
 @keyframes lookbob {
   from {
-    rotate: -3deg;
+    transform: rotate(-4deg);
   }
   to {
-    rotate: 3deg;
+    transform: rotate(4deg);
   }
 }
 @keyframes breathe {
   0%,
   100% {
-    scale: 1;
+    transform: scale(1);
   }
   50% {
-    scale: 0.97;
+    transform: scale(0.96);
+  }
+}
+@keyframes nodbob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(3px) rotate(6deg);
+  }
+}
+@keyframes jumpbob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-7px) scale(0.96, 1.04);
+  }
+  70% {
+    transform: translateY(0) scale(1.04, 0.96);
   }
 }
 @keyframes routeDash {

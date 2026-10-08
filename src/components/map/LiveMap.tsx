@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
 import { floorColor, WALL } from './furniture'
@@ -13,6 +13,9 @@ const behaviorAnim: Partial<Record<PetBehavior, string>> = {
   running: 'pet-run',
   looking: 'pet-look',
   sleeping: 'pet-sleep',
+  eating: 'pet-eat',
+  drinking: 'pet-eat',
+  playing: 'pet-play',
 }
 
 const behaviorColor: Record<PetBehavior, string> = {
@@ -110,6 +113,7 @@ export function LiveMap() {
   const setActivePet = useStore((s) => s.setActivePet)
   const mapMode = useStore((s) => s.mapMode)
   const transition = useStore((s) => s.transitionRoute)
+  const walkIndex = useStore((s) => s.walkIndex)
   const events = useStore((s) => s.events)
   const openModal = useStore((s) => s.openModal)
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
@@ -117,6 +121,25 @@ export function LiveMap() {
   const sendCommand = useStore((s) => s.sendCommand)
   const toast = useStore((s) => s.toast)
   const [popover, setPopover] = useState<string | null>(null)
+  const [wander, setWander] = useState<Record<string, { x: number; y: number }>>({})
+
+  // 空闲时宠物在房间内轻微游走，让地图更“活”
+  useEffect(() => {
+    const t = setInterval(() => {
+      setWander(() => {
+        const next: Record<string, { x: number; y: number }> = {}
+        for (const p of pets) {
+          if (p.id === transition?.petId) continue
+          next[p.id] =
+            p.behavior === 'idle' || p.behavior === 'looking'
+              ? { x: (Math.sin(Date.now() / 900 + p.id.length) * 34), y: (Math.cos(Date.now() / 1100 + p.id.length) * 22) }
+              : { x: 0, y: 0 }
+        }
+        return next
+      })
+    }, 2600)
+    return () => clearInterval(t)
+  }, [pets, transition])
 
   const petRoomIds = new Set(pets.map((p) => p.roomId))
   // 历史轨迹：按 room_change 事件顺序（时间升序）取房间质心
@@ -227,13 +250,17 @@ export function LiveMap() {
               <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke="#8fb6d6" strokeWidth={3} strokeLinecap="round" style={{ vectorEffect: 'non-scaling-stroke' }} strokeDasharray="2 10" />
             </g>
           ))}
-          {/* 过渡路径 + 脚印（画在家具之上，确保可见） */}
-          {transition && (
+          {/* 过渡路径 + 脚印（沿真实门口折线，画在家具之上） */}
+          {transition && transition.path.length > 1 && (
             <>
-              <line className="transition-route" x1={transition.from.x} y1={transition.from.y} x2={transition.to.x} y2={transition.to.y} />
-              {[0.3, 0.5, 0.7].map((t, i) => (
-                <circle key={i} cx={transition.from.x + (transition.to.x - transition.from.x) * t} cy={transition.from.y + (transition.to.y - transition.from.y) * t} r={6} fill="#4ca092" opacity={0.5 + i * 0.15} />
-              ))}
+              <polyline className="transition-route" points={poly(transition.path)} />
+              {transition.path.flatMap((pt, i) => {
+                if (i === 0) return []
+                const a = transition.path[i - 1]
+                return [0.4, 0.8].map((t, k) => (
+                  <circle key={`${i}-${k}`} cx={a.x + (pt.x - a.x) * t} cy={a.y + (pt.y - a.y) * t} r={5} fill="#4ca092" opacity={0.45} />
+                ))
+              })}
               <circle cx={transition.to.x} cy={transition.to.y} r={9} fill="#fff" stroke="#2e7f75" strokeWidth={5} />
             </>
           )}
@@ -246,12 +273,17 @@ export function LiveMap() {
           // 同房间内的宠物按序号横向错开
           const inRoom = pets.filter((x) => x.roomId === p.roomId)
           const idx = inRoom.findIndex((x) => x.id === p.id)
-          // 以地图坐标系错位，随地图缩放自适应（而非固定像素）
           const offsetUnits = (idx - (inRoom.length - 1) / 2) * 95
           const isActive = p.id === activePetId
           const color = behaviorColor[p.behavior]
-          const leftPct = (base.x + offsetUnits) / 10
-          const topPct = base.y / 6
+          // 正在跨房间行走的宠物：位置取当前折线路点；否则取房间质心 + 轻微游走
+          const walking = transition?.petId === p.id && transition.path.length > 1
+          const wpt = walking ? transition.path[Math.min(walkIndex, transition.path.length - 1)] : null
+          const w = wander[p.id] ?? { x: 0, y: 0 }
+          const px = wpt ? wpt.x : base.x + offsetUnits + (walking ? 0 : w.x)
+          const py = wpt ? wpt.y : base.y + (walking ? 0 : w.y)
+          const leftPct = px / 10
+          const topPct = py / 6
           return (
             <div
               key={p.id}
@@ -260,7 +292,9 @@ export function LiveMap() {
                 left: `${leftPct}%`,
                 top: `${topPct}%`,
                 transform: 'translate(-50%,-50%)',
-                transition: 'left .9s cubic-bezier(.22,.86,.36,1), top .9s cubic-bezier(.22,.86,.36,1)',
+                transition: walking
+                  ? 'left .42s linear, top .42s linear'
+                  : 'left 2.4s ease-in-out, top 2.4s ease-in-out',
                 zIndex: isActive ? 8 : 6,
               }}
             >
@@ -332,6 +366,20 @@ export function LiveMap() {
                 <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: behaviorColor[p.behavior] }} />
                 定位置信度 {Math.round(p.confidence * 100)}% · {p.trackingSources.includes('camera') ? '视觉 + BLE' : 'BLE / IMU'}
               </div>
+              {/* 实时小画面缩略 */}
+              <button
+                className="relative mt-2 flex h-[86px] w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]"
+                onClick={() => openCamera()}
+                aria-label="查看实时画面"
+              >
+                <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[9px] font-bold text-white">
+                  ● LIVE · {p.trackingSources.includes('camera') ? r?.name : '最近摄像头'}
+                </span>
+                <span className={behaviorAnim[p.behavior] ?? ''}>
+                  <PetSvg behavior={p.behavior} size={56} />
+                </span>
+                <span className="absolute bottom-1.5 right-2 text-[9px] text-[#3f514b]">点击看大图 ›</span>
+              </button>
               <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                 {actions.map((a) => (
                   <button key={a.label} className="rounded-xl border border-line bg-white px-1 py-2 text-[11px] font-bold text-[#53645e] hover:border-[#cde3dc] hover:bg-teal-soft hover:text-teal" onClick={a.onClick}>
