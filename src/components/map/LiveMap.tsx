@@ -1,8 +1,9 @@
 import { useStore } from '@/store/useStore'
 import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
-import { FurnitureNodes, deviceIconOf } from './furniture'
+import { FurnitureNodes, floorColor, WALL } from './furniture'
+import { DeviceGlyph } from './DeviceGlyph'
 import { PetSvg } from '@/components/PetSvg'
-import type { PetBehavior } from '@/domain/types'
+import type { Point, PetBehavior } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
   running: 'pet-run',
@@ -12,6 +13,38 @@ const behaviorAnim: Partial<Record<PetBehavior, string>> = {
 
 function poly(points: { x: number; y: number }[]) {
   return points.map((p) => `${p.x},${p.y}`).join(' ')
+}
+
+/** 在离户型中心最近、足够长的墙边上生成一个门洞 + 开门弧线 */
+function doorFor(polygon: Point[]) {
+  if (polygon.length < 3) return null
+  const C = { x: MAP_W / 2, y: MAP_H / 2 }
+  let bm: { a: Point; b: Point; m: Point; len: number } | null = null
+  let bd = Infinity
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i]
+    const b = polygon[(i + 1) % polygon.length]
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    if (len < 90) continue
+    const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    const d = Math.hypot(m.x - C.x, m.y - C.y)
+    if (d < bd) { bd = d; bm = { a, b, m, len } }
+  }
+  if (!bm) return null
+  const { a, b, m, len } = bm
+  const ux = (b.x - a.x) / len
+  const uy = (b.y - a.y) / len
+  const half = Math.min(70, len * 0.6) / 2
+  const x1 = m.x - ux * half
+  const y1 = m.y - uy * half
+  const x2 = m.x + ux * half
+  const y2 = m.y + uy * half
+  let nx = -uy
+  let ny = ux
+  if ((m.x + nx - C.x) ** 2 + (m.y + ny - C.y) ** 2 > (m.x - C.x) ** 2 + (m.y - C.y) ** 2) { nx = -nx; ny = -ny }
+  const r = half * 2
+  const arc = `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x1 + nx * r} ${y1 + ny * r}`
+  return { x1, y1, x2, y2, arc }
 }
 
 export function LiveMap() {
@@ -70,31 +103,45 @@ export function LiveMap() {
               <circle cx={transition.to.x} cy={transition.to.y} r={8} fill="#fff" stroke="#2e7f75" strokeWidth={5} />
             </>
           )}
-          {/* 房间 */}
+          {/* 房间：地板色 + 墙体 + 门洞 + 家具 */}
           {rooms.map((r) => {
             const b = roomBounds(r)
+            const active = petRoomIds.has(r.id)
+            const door = doorFor(r.polygon)
+            const floor = floorColor(r.kind)
             return (
               <g key={r.id}>
+                {/* 墙体（底层较深描边） */}
+                <polygon points={poly(r.polygon)} fill={floor} stroke="#7f9289" strokeWidth={9} strokeLinejoin="round" style={{ vectorEffect: 'non-scaling-stroke' }} />
+                {/* 地板（上层浅描边 + 可点击） */}
                 <polygon
                   points={poly(r.polygon)}
-                  fill="rgba(255,255,255,.91)"
-                  stroke={petRoomIds.has(r.id) ? '#98baae' : '#cbd7d1'}
-                  strokeWidth={4}
+                  fill={floor}
+                  stroke={active ? '#8fc3b4' : WALL}
+                  strokeWidth={active ? 4 : 2.5}
+                  strokeLinejoin="round"
                   style={{ cursor: 'pointer', vectorEffect: 'non-scaling-stroke' }}
                   onClick={() =>
                     toast('info', `${r.name} · ${r.environment.temperature.toFixed(1)}℃ · 湿度 ${r.environment.humidity}%`)
                   }
                 />
+                {/* 门洞：用地板色覆盖墙体形成开口 + 开门弧线 */}
+                {door && (
+                  <>
+                    <line x1={door.x1} y1={door.y1} x2={door.x2} y2={door.y2} stroke={floor} strokeWidth={11} strokeLinecap="butt" style={{ vectorEffect: 'non-scaling-stroke' }} />
+                    <path d={door.arc} fill="none" stroke="#c3d0ca" strokeWidth={2} style={{ vectorEffect: 'non-scaling-stroke' }} />
+                  </>
+                )}
                 <FurnitureNodes room={r} />
-                <text x={b.x + 16} y={b.y + 28} fontSize={18} fontWeight={800} fill="#8a9a95" style={{ pointerEvents: 'none' }}>
+                <text x={b.x + 14} y={b.y + 24} fontSize={15} fontWeight={800} fill="#7c8d87" style={{ pointerEvents: 'none' }}>
                   {r.name}
                 </text>
-                {/* 设备点位 */}
+                {/* 设备点位（小度产品风格图标） */}
                 {r.devices.map((did, idx) => {
                   const dev = devices.find((d) => d.id === did)
                   if (!dev) return null
-                  const dx = b.x + b.w * (0.2 + (idx % 3) * 0.3)
-                  const dy = b.y + b.h * (idx < 3 ? 0.22 : 0.78)
+                  const dx = b.x + b.w * (0.22 + (idx % 3) * 0.28)
+                  const dy = b.y + b.h * (idx < 3 ? 0.2 : 0.8)
                   return (
                     <g
                       key={did}
@@ -105,10 +152,10 @@ export function LiveMap() {
                         setDeviceControlTarget({ deviceId: did })
                       }}
                     >
-                      <circle r={22} fill="white" stroke="#d7e2dd" strokeWidth={2} />
-                      <text y={1} fontSize={21} textAnchor="middle" dominantBaseline="central" style={{ pointerEvents: 'none' }}>
-                        {deviceIconOf(dev.type)}
-                      </text>
+                      <circle r={21} fill="rgba(255,255,255,.92)" stroke="#dbe5e0" strokeWidth={1.5} />
+                      <g transform="scale(0.9)" style={{ pointerEvents: 'none' }}>
+                        <DeviceGlyph type={dev.type} />
+                      </g>
                     </g>
                   )
                 })}
