@@ -36,11 +36,17 @@ export function HomePage() {
     40,
     Math.min(99, 60 + sum.eats * 5 + sum.drinks * 3 + sum.plays * 6 + sum.ownerInteractions * 4 + sum.roomChanges * 2),
   )
+  // 问候语与时间按真实当前时间生成，和事件时间同一基准（避免固定“09:42”与事件时间矛盾）
+  const now = new Date()
+  const hour = now.getHours()
+  const greeting = hour < 5 ? '夜深了' : hour < 11 ? '早上好' : hour < 13 ? '中午好' : hour < 18 ? '下午好' : '晚上好'
+  const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()]
+  const clock = now.toTimeString().slice(0, 5)
 
   return (
     <div>
-      <div className="eyebrow">MON · 09:42 AM</div>
-      <h1 className="my-1.5 text-3xl font-extrabold tracking-tight">早上好，Jin</h1>
+      <div className="eyebrow">{week} · {clock}</div>
+      <h1 className="my-1.5 text-3xl font-extrabold tracking-tight">{greeting}，Jin</h1>
       <div className="text-sm text-muted">{pet.name}正在{room?.name ?? '家里'}活动，当前一切正常。</div>
 
       {pets.length > 1 && (

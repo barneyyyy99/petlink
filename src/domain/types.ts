@@ -180,6 +180,10 @@ export type Fence = {
   points: Point[]
   mapVersion: number
   enabled: boolean
+  /** 用户是否手动自定义过（自定义后不被户型变更静默覆盖） */
+  custom?: boolean
+  /** 户型发生较大变化、围栏可能不再适用，需用户复核 */
+  needsReview?: boolean
 }
 
 // ---- 自动化规则 ----

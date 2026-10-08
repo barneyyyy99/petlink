@@ -94,6 +94,8 @@ export type StoreState = {
   cameraFloatOpen: boolean
   selectedEvent: PetEvent | null
   deviceControlTarget: DeviceControlTarget
+  /** 当前设备操作的执行状态（统一反馈：发送中/成功/失败/离线） */
+  deviceOp: { deviceId: string; phase: 'sending' | 'success' | 'failed' | 'offline'; message: string } | null
   editingRuleId: string | null
 
   // ---- actions ----
@@ -130,6 +132,11 @@ export type StoreState = {
   bindDeviceToRoom: (deviceId: string, roomId: string) => void
   sendCommand: (deviceId: string, command: string, payload?: unknown) => Promise<void>
   turnOnAC: (roomId?: string) => Promise<void>
+  /** 统一设备操作：待机→发送中→执行成功/失败/离线，并落事件 */
+  execDevice: (deviceId: string, command: string, opts?: { apply?: () => void; eventType?: PetEvent['type']; eventDetail?: string }) => Promise<void>
+  /** 远程投喂（先确认克数再执行），成功后生成进食/投喂事件 */
+  feed: (deviceId: string, grams: number) => Promise<void>
+  clearDeviceOp: () => void
 
   addEvent: (e: Omit<PetEvent, 'id' | 'timestamp'> & { timestamp?: number }) => void
   openEvent: (e: PetEvent) => void
@@ -203,6 +210,29 @@ function clearHandoffTimers() {
   handoffTimers = []
 }
 
+/** 两套房间的整体外接框是否发生较大变化（用于判断自定义围栏是否需复核） */
+function roomsBoundsChanged(a: Room[], b: Room[], threshold = 60): boolean {
+  if (a.length !== b.length) return true
+  const box = (rooms: Room[]) => {
+    const pts = rooms.flatMap((r) => r.polygon)
+    if (!pts.length) return { x1: 0, y1: 0, x2: 0, y2: 0 }
+    return {
+      x1: Math.min(...pts.map((p) => p.x)),
+      y1: Math.min(...pts.map((p) => p.y)),
+      x2: Math.max(...pts.map((p) => p.x)),
+      y2: Math.max(...pts.map((p) => p.y)),
+    }
+  }
+  const A = box(a)
+  const B = box(b)
+  return (
+    Math.abs(A.x1 - B.x1) > threshold ||
+    Math.abs(A.y1 - B.y1) > threshold ||
+    Math.abs(A.x2 - B.x2) > threshold ||
+    Math.abs(A.y2 - B.y2) > threshold
+  )
+}
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -222,6 +252,7 @@ export const useStore = create<StoreState>()(
       cameraFloatOpen: false,
       selectedEvent: null,
       deviceControlTarget: null,
+      deviceOp: null,
       editingRuleId: null,
 
       toast: (kind, text) => {
@@ -269,7 +300,18 @@ export const useStore = create<StoreState>()(
     const fallbackRoom = rooms2[0]?.id
     const pets = s.pets.map((p) => (roomIds.has(p.roomId) ? p : { ...p, roomId: fallbackRoom ?? p.roomId }))
     const activePet = pets.find((p) => p.id === s.activePetId) ?? pets[0]
-    const fence: Fence = { points: fitFenceRect(rooms2), mapVersion: version, enabled: s.fence.enabled }
+    // 围栏：用户自定义过的不被静默覆盖；仅在户型大改时标记需复核，否则沿用
+    const prevFence = s.fence
+    let fence: Fence
+    let fenceWarn = false
+    if (prevFence.custom && prevFence.points.length >= 3) {
+      const major = roomsBoundsChanged(s.homeMap.rooms, rooms2)
+      fence = { ...prevFence, needsReview: major }
+      fenceWarn = major
+    } else {
+      // 非自定义围栏才自动贴合新户型
+      fence = { points: fitFenceRect(rooms2), mapVersion: version, enabled: prevFence.enabled, custom: false, needsReview: false }
+    }
     set({
       homeMap,
       devices,
@@ -278,7 +320,8 @@ export const useStore = create<StoreState>()(
       fence,
       activeCameraId: get().resolveCameraId(activePet.roomId),
     })
-    get().toast('success', `户型已应用：${rooms2.length} 个房间 · 追踪/摄像头/围栏已同步 (V${version})`)
+    get().toast('success', `户型已应用：${rooms2.length} 个房间 · 追踪/摄像头已同步 (V${version})`)
+    if (fenceWarn) get().toast('warn', '地图已更新，请到安全区域检查围栏是否仍然适用')
   },
 
   setActiveCamera: (deviceId) => set({ activeCameraId: deviceId }),
@@ -356,7 +399,8 @@ export const useStore = create<StoreState>()(
   refreshTracking: () => {
     const s = get()
     const hasCam = roomHasDevice(s.devices, s.pet.roomId, 'camera')
-    const confidence = 0.94 + Math.floor(s.pet.lastUpdatedAt % 5) / 100
+    // 置信度按定位来源取稳定值（视觉+BLE 高于纯 BLE/IMU），不随刷新随机抖动
+    const confidence = hasCam ? 0.97 : 0.9
     set(
       patchActive(s, (p) => ({
         ...p,
@@ -366,7 +410,7 @@ export const useStore = create<StoreState>()(
       })),
     )
     const room = s.homeMap.rooms.find((r) => r.id === s.pet.roomId)
-    get().toast('success', `定位已刷新：${room?.name ?? ''} · 置信度 ${Math.round(confidence * 100)}%`)
+    get().toast('success', `定位已刷新：${room?.name ?? ''} · ${hasCam ? '视觉 + BLE' : 'BLE / IMU'} · 置信度 ${Math.round(confidence * 100)}%`)
   },
 
       setRoomEnvironment: (roomId, temperature, humidity) => {
@@ -431,16 +475,16 @@ export const useStore = create<StoreState>()(
       toggleRule: (id) =>
         set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)) })),
 
-      setFencePoints: (pts) => set((s) => ({ fence: { ...s.fence, points: pts } })),
+      setFencePoints: (pts) => set((s) => ({ fence: { ...s.fence, points: pts, custom: true, needsReview: false } })),
       fitFence: () =>
-        set((s) => ({ fence: { ...s.fence, points: fitFenceRect(s.homeMap.rooms), mapVersion: s.homeMap.version } })),
+        set((s) => ({ fence: { ...s.fence, points: fitFenceRect(s.homeMap.rooms), mapVersion: s.homeMap.version, custom: false, needsReview: false } })),
       saveFence: () => {
         const s = get()
         if (s.fence.points.length < 3) {
           s.toast('error', '至少需要 3 个点才能形成围栏')
           return false
         }
-        set({ fence: { ...s.fence, enabled: true, mapVersion: s.homeMap.version } })
+        set({ fence: { ...s.fence, enabled: true, custom: true, needsReview: false, mapVersion: s.homeMap.version } })
         s.toast('success', `虚拟栅栏已保存 · 与当前 V${s.homeMap.version} 家庭地图同步`)
         return true
       },
@@ -458,7 +502,8 @@ export const useStore = create<StoreState>()(
         })
         s.toast(active ? 'warn' : 'info', active ? '走失模式已开启，位置将持续广播' : '走失模式已关闭')
       },
-      setDeviceControlTarget: (t) => set({ deviceControlTarget: t, modal: t ? 'deviceControl' : get().modal }),
+      setDeviceControlTarget: (t) => set({ deviceControlTarget: t, deviceOp: null, modal: t ? 'deviceControl' : get().modal }),
+      clearDeviceOp: () => set({ deviceOp: null }),
 
       resetDemo: () => {
         clearHandoffTimers()
@@ -473,6 +518,7 @@ export const useStore = create<StoreState>()(
           cameraFloatOpen: false,
           selectedEvent: null,
           deviceControlTarget: null,
+          deviceOp: null,
           findOwner: { active: false, step: 0, deviceName: '', roomName: '', petName: '' },
         })
         get().toast('success', '已恢复演示数据')
@@ -483,6 +529,8 @@ export const useStore = create<StoreState>()(
       simulateNextRoom: () => {},
       sendCommand: async () => {},
       turnOnAC: async () => {},
+      execDevice: async () => {},
+      feed: async () => {},
       sendChat: () => {},
       triggerBell: () => {},
       clearFindOwner: () => {},
@@ -633,6 +681,53 @@ function initComplexActions() {
       }
       s.toast('success', `指令已发送：${command}${dev ? ` · ${dev.name}` : ''}`)
       s.addEvent({ type: 'device_command', title: command, detail: `${dev?.name ?? '设备'} · 指令已发送（未必执行成功）`, roomId: dev?.roomId, deviceId })
+    },
+
+    execDevice: async (deviceId, command, opts) => {
+      const s = get()
+      const dev = s.devices.find((d) => d.id === deviceId)
+      if (!dev) return
+      if (!dev.online) {
+        set({ deviceOp: { deviceId, phase: 'offline', message: `${dev.name}当前离线，指令未发送` } })
+        s.toast('error', `${dev.name}离线，无法执行`)
+        return
+      }
+      set({ deviceOp: { deviceId, phase: 'sending', message: `${command} · 发送中…` } })
+      const res = await mockHardwareAdapter.sendCommand(deviceId, command)
+      if (!res.accepted) {
+        set({ deviceOp: { deviceId, phase: 'failed', message: res.message } })
+        get().addEvent({ type: 'device_command', title: command, detail: `${dev.name} · 执行失败：${res.message}（模拟）`, roomId: dev.roomId, deviceId })
+        get().toast('error', `执行失败：${res.message}`)
+        return
+      }
+      // 已受理 → 模拟设备执行耗时后返回“执行成功”（Demo 模拟反馈）
+      await new Promise((r) => window.setTimeout(r, 650))
+      opts?.apply?.()
+      set({ deviceOp: { deviceId, phase: 'success', message: `${command} · 执行成功（模拟）` } })
+      get().addEvent({
+        type: opts?.eventType ?? 'device_command',
+        title: command,
+        detail: opts?.eventDetail ?? `${dev.name} · 执行成功（模拟反馈）`,
+        petId: get().activePetId,
+        roomId: dev.roomId,
+        deviceId,
+      })
+      get().toast('success', `${dev.name}：${command} 执行成功（模拟）`)
+    },
+
+    feed: async (deviceId, grams) => {
+      const s = get()
+      const dev = s.devices.find((d) => d.id === deviceId)
+      if (!dev) return
+      await get().execDevice(deviceId, `远程投喂 ${grams}g`, {
+        eventType: 'eat',
+        eventDetail: `${dev.name} · 远程投喂 ${grams}g 执行成功（模拟反馈）`,
+        apply: () => {
+          const cur = get().devices.find((d) => d.id === deviceId)
+          const food = Math.max(0, Number(cur?.status.food ?? 68) - Math.round(grams / 2))
+          get().updateDevice(deviceId, { status: { ...cur?.status, food, lastPortion: grams } })
+        },
+      })
     },
 
     turnOnAC: async (roomId?: string) => {

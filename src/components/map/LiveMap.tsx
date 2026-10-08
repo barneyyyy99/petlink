@@ -238,7 +238,7 @@ export function LiveMap() {
                   return (
                     <g
                       key={did}
-                      data-testid={dev.type === 'camera' ? 'map-camera' : undefined}
+                      data-testid={dev.type === 'camera' ? 'map-camera' : `map-device-${dev.type}`}
                       transform={`translate(${dx} ${dy})`}
                       style={{ cursor: 'pointer' }}
                       onClick={(e) => {

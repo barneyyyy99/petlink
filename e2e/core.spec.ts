@@ -18,6 +18,18 @@ test('寻宠卡片按资料生成并可上传照片', async ({ page }) => {
   await expect(page.getByTestId('share-upload-photo')).toBeVisible()
 })
 
+test('远程投喂：确认克数 → 执行中 → 执行成功（闭环反馈）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('live-map-svg').waitFor()
+  await page.getByTestId('map-device-feeder').first().click({ force: true })
+  await expect(page.getByTestId('device-control-modal')).toBeVisible({ timeout: 2000 })
+  await expect(page.getByTestId('feed-portions')).toBeVisible()
+  await page.getByRole('button', { name: '12g' }).click()
+  await page.getByTestId('feed-confirm').click()
+  await expect(page.getByTestId('device-op')).toContainText('执行成功', { timeout: 3000 })
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
