@@ -70,6 +70,22 @@ test('记录页时间筛选（今天/近7天/本月）真实改变数据', async
   expect(month).toBeGreaterThanOrEqual(d7)
 })
 
+test('移动端(390px)无横向滚动、导航可用、Esc 关闭弹层', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await gotoFresh(page)
+  for (const nav of ['nav-home', 'nav-map', 'nav-records', 'nav-me']) {
+    await page.getByTestId(nav).click()
+    await page.waitForTimeout(150)
+    const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }))
+    expect(o.sw).toBeLessThanOrEqual(o.cw + 1)
+  }
+  // Esc 关闭弹层
+  await page.getByTestId('account-btn').click()
+  await expect(page.getByTestId('auth-modal')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('auth-modal')).toBeHidden()
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
