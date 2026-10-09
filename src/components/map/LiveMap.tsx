@@ -5,7 +5,7 @@ import { floorColor, WALL } from './furniture'
 import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
 import { PetFace } from '@/components/PetFace'
-import { behaviorLabel, roomDevices } from '@/lib/tracking'
+import { behaviorLabel, roomDevices, behaviorColor, behaviorBadge } from '@/lib/tracking'
 import { relativeTime, timeHM } from '@/lib/time'
 import { ambianceFor } from '@/lib/ambiance'
 import { eventsForPet } from '@/lib/diary'
@@ -18,27 +18,6 @@ const behaviorAnim: Partial<Record<PetBehavior, string>> = {
   eating: 'pet-eat',
   drinking: 'pet-eat',
   playing: 'pet-play',
-}
-
-const behaviorColor: Record<PetBehavior, string> = {
-  sleeping: '#7f93c0',
-  idle: '#9aa8a3',
-  looking: '#4ca092',
-  running: '#2e7f75',
-  eating: '#c5793f',
-  drinking: '#5aa6e0',
-  playing: '#d98fb0',
-  litter: '#b0a06a',
-}
-const behaviorBadge: Record<PetBehavior, string> = {
-  sleeping: '💤',
-  idle: '●',
-  looking: '👀',
-  running: '🐾',
-  eating: '🍽',
-  drinking: '💧',
-  playing: '🧶',
-  litter: '◫',
 }
 
 function poly(points: { x: number; y: number }[]) {

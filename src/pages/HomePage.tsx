@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { PetFace } from '@/components/PetFace'
-import { behaviorLabel, behaviorMeta } from '@/lib/tracking'
+import { behaviorLabel, behaviorMeta, behaviorColor, behaviorBadge } from '@/lib/tracking'
 import { summarizeDay, buildDiary, eventsForPet, filterByRange } from '@/lib/diary'
 import { blobToDataUrl, downscaleDataUrl } from '@/lib/image'
 import { Icon, type IconName } from '@/components/Icon'
@@ -121,9 +121,18 @@ export function HomePage() {
               </div>
             </div>
 
-            {/* 宠物头像（支持上传真实照片，地图沿用） */}
-            <div className="absolute bottom-6 right-8 grid h-[200px] w-[200px] place-items-center overflow-hidden rounded-full bg-[rgba(244,233,208,.92)] shadow-soft max-[1000px]:opacity-80">
-              <PetFace pet={pet} size={pet.photo ? 200 : 150} />
+            {/* 宠物头像（支持上传真实照片，地图沿用）+ 右上角悬浮状态徽标 */}
+            <div className="absolute bottom-6 right-8 h-[200px] w-[200px] max-[1000px]:opacity-90">
+              <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[rgba(244,233,208,.92)] shadow-soft">
+                <PetFace pet={pet} size={pet.photo ? 200 : 150} />
+              </div>
+              <span
+                data-testid="home-behavior-badge"
+                className="absolute -right-1 -top-1 z-[4] inline-flex items-center gap-1 rounded-full border-2 border-white bg-white px-2.5 py-1 text-xs font-bold shadow"
+                style={{ color: behaviorColor[pet.behavior], boxShadow: `0 0 0 2px ${behaviorColor[pet.behavior]}` }}
+              >
+                {behaviorBadge[pet.behavior]} {behaviorLabel[pet.behavior]}
+              </span>
             </div>
             <input ref={photoRef} type="file" accept="image/*" className="hidden" data-testid="home-photo-input" onChange={(e) => onPickPhoto(e.target.files?.[0])} />
             <button

@@ -71,3 +71,27 @@ export const behaviorMeta: Record<string, string> = {
   playing: '活跃度正常 · 玩耍中',
   litter: '区域停留中',
 }
+
+/** 行为对应的状态色（用于头像状态环/徽标） */
+export const behaviorColor: Record<string, string> = {
+  sleeping: '#7f93c0',
+  idle: '#9aa8a3',
+  looking: '#4ca092',
+  running: '#2e7f75',
+  eating: '#c5793f',
+  drinking: '#5aa6e0',
+  playing: '#d98fb0',
+  litter: '#b0a06a',
+}
+
+/** 行为对应的小图标（emoji），用于头像右上角悬浮状态徽标 */
+export const behaviorBadge: Record<string, string> = {
+  sleeping: '💤',
+  idle: '●',
+  looking: '👀',
+  running: '🐾',
+  eating: '🍽',
+  drinking: '💧',
+  playing: '🧶',
+  litter: '◫',
+}
