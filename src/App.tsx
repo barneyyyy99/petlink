@@ -9,6 +9,7 @@ import { MePage } from '@/pages/MePage'
 import { Toaster } from '@/components/Toaster'
 import { TrailDrawer } from '@/components/TrailDrawer'
 import { DemoPanel } from '@/components/DemoPanel'
+import { MiniWidget } from '@/components/MiniWidget'
 import { PwaManager } from '@/components/PwaManager'
 import { AvatarPanel } from '@/modals/AvatarPanel'
 import { CameraModal } from '@/modals/CameraModal'
@@ -50,6 +51,11 @@ export default function App() {
   useEffect(() => {
     if (authRecovery) openModal('auth')
   }, [authRecovery, openModal])
+
+  // 浮窗 / 桌面组件模式：仅渲染迷你地图
+  if (new URLSearchParams(window.location.search).get('mini') === '1') {
+    return <MiniWidget />
+  }
 
   return (
     <div className="grid h-screen grid-cols-[92px_1fr] max-[1000px]:grid-cols-1">

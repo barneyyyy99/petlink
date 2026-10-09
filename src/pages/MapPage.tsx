@@ -46,6 +46,14 @@ export function MapPage() {
               </button>
             ))}
           </div>
+          <button
+            className="btn whitespace-nowrap"
+            data-testid="mini-widget-btn"
+            title="在小窗口中仅显示户型与实时移动的宠物（可作桌面浮窗）"
+            onClick={() => window.open(`${window.location.pathname}?mini=1`, 'petlink-mini', 'width=480,height=340,menubar=no,toolbar=no,location=no,status=no')}
+          >
+            浮窗
+          </button>
           <button className="btn whitespace-nowrap" data-testid="map-fence-btn" onClick={() => openModal('fence')}>
             围栏
           </button>

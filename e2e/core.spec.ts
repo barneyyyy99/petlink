@@ -118,6 +118,13 @@ test('“我的”页按类别分组 + 围栏可从地图页进入', async ({ pa
   await expect(page.getByTestId('fence-modal')).toBeVisible()
 })
 
+test('浮窗模式仅显示户型地图（无主导航）', async ({ page }) => {
+  await page.goto('/?mini=1')
+  await expect(page.getByTestId('live-map-svg')).toBeVisible()
+  await expect(page.getByTestId('mini-exit')).toBeVisible()
+  await expect(page.getByTestId('nav-home')).toHaveCount(0)
+})
+
 test('首页上传宠物照片后地图沿用', async ({ page }) => {
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
   await gotoFresh(page)
