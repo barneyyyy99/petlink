@@ -30,6 +30,31 @@ test('远程投喂：确认克数 → 执行中 → 执行成功（闭环反馈�
   await expect(page.getByTestId('device-op')).toContainText('执行成功', { timeout: 3000 })
 })
 
+test('删除房间需二次确认（可取消/可撤销）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('edit-map-btn').click()
+  await expect(page.getByTestId('map-builder-modal')).toBeVisible()
+  const before = await page.getByTestId('room-row').count()
+  await page.getByTestId('room-del').first().click()
+  const confirm = page.getByTestId('room-del-confirm')
+  await expect(confirm).toBeVisible()
+  await confirm.getByRole('button', { name: '取消' }).click()
+  await expect(page.getByTestId('room-row')).toHaveCount(before)
+  await page.getByTestId('room-del').first().click()
+  await page.getByTestId('room-del-ok').click()
+  await expect(page.getByTestId('room-row')).toHaveCount(before - 1)
+})
+
+test('地图设备模式显示设备状态（与实时模式内容不同）', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('live-map-svg').waitFor()
+  await expect(page.getByTestId('live-map-svg')).not.toContainText('余粮')
+  await page.getByTestId('map-mode-devices').click()
+  await expect(page.getByTestId('live-map-svg')).toContainText('余粮')
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()

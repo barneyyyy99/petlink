@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { roomBounds } from '@/domain/geometry'
 import type { Room } from '@/domain/types'
 import type { useMapEditor } from './useMapEditor'
@@ -16,6 +17,7 @@ const KINDS: { value: Room['kind']; label: string }[] = [
 export function InspectorPanel({ editor }: { editor: Editor }) {
   const { rooms, selected } = editor
   const room = selected >= 0 ? rooms[selected] : undefined
+  const [confirmDel, setConfirmDel] = useState<number>(-1)
 
   return (
     <div className="flex max-h-[440px] flex-col gap-2 overflow-auto rounded-[18px] border border-line bg-[#f3f7f4] p-3">
@@ -51,11 +53,32 @@ export function InspectorPanel({ editor }: { editor: Editor }) {
           <button className="rounded-lg bg-teal-soft px-2 py-1 text-[10px] text-teal" onClick={() => editor.setSelected(i)}>
             编辑
           </button>
-          <button className="rounded-lg bg-[#edf2ef] py-1 text-[#60726b]" aria-label="删除" onClick={() => { editor.setSelected(i); editor.remove() }}>
+          <button
+            className="rounded-lg bg-[#edf2ef] py-1 text-[#60726b]"
+            aria-label="删除"
+            data-testid="room-del"
+            onClick={() => setConfirmDel(i)}
+          >
             ×
           </button>
         </div>
       ))}
+
+      {confirmDel >= 0 && rooms[confirmDel] && (
+        <div data-testid="room-del-confirm" className="rounded-xl border border-[#f0cfca] bg-[#fdeeec] p-2.5 text-[11px] text-[#9c413a]">
+          <div className="mb-2">确认删除房间「{rooms[confirmDel].name}」？该操作可通过“撤销”恢复。</div>
+          <div className="flex gap-1.5">
+            <button className="btn !py-1.5 !text-[11px]" onClick={() => setConfirmDel(-1)}>取消</button>
+            <button
+              className="btn btn-red !py-1.5 !text-[11px]"
+              data-testid="room-del-ok"
+              onClick={() => { editor.setSelected(confirmDel); editor.remove(); setConfirmDel(-1) }}
+            >
+              删除
+            </button>
+          </div>
+        </div>
+      )}
 
       {room && (
         <div data-testid="room-inspector" className="mt-1 rounded-2xl border border-[#dbe7e1] bg-[#f4f8f6] p-3">

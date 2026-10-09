@@ -8,7 +8,7 @@ import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, roomDevices } from '@/lib/tracking'
 import { relativeTime } from '@/lib/time'
 import { ambianceFor } from '@/lib/ambiance'
-import type { Point, PetBehavior } from '@/domain/types'
+import type { Point, PetBehavior, Device } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
   running: 'pet-run',
@@ -104,6 +104,24 @@ function windowsFor(rooms: { polygon: Point[] }[]): Win[] {
     }
   }
   return out
+}
+
+/** 设备模式下显示的简短状态文案 */
+function deviceStatusText(dev: Device, room?: { environment: { temperature: number } }): string {
+  if (!dev.online) return '离线'
+  const st = dev.status
+  switch (dev.type) {
+    case 'ac':
+      return st.power ? `制冷 ${Number(st.target ?? 26)}℃` : '待机'
+    case 'feeder':
+      return `余粮 ${Number(st.food ?? 68)}%`
+    case 'water':
+      return `水位 ${Number(st.level ?? 72)}%`
+    case 'temp_humidity':
+      return room ? `${room.environment.temperature.toFixed(0)}℃` : '在线'
+    default:
+      return '在线'
+  }
 }
 
 export function LiveMap() {
@@ -222,6 +240,7 @@ export function LiveMap() {
                     key={f.id}
                     transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`}
                     style={{ pointerEvents: 'none', filter: 'drop-shadow(0 3px 2.5px rgba(35,55,48,.2))' }}
+                    opacity={mapMode === 'devices' ? 0.4 : 1}
                   >
                     {drawFurniture(f.type, f.w, f.h)}
                   </g>
@@ -270,6 +289,16 @@ export function LiveMap() {
                       <text y={34} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
                         {dev.name.replace(/^(客厅|卧室|书房|阳台|餐厅)/, '')}
                       </text>
+                      {/* 设备模式：图标下方显示在线/离线与关键状态 */}
+                      {mapMode === 'devices' && (
+                        <g style={{ pointerEvents: 'none' }}>
+                          <rect x={-28} y={40} width={56} height={16} rx={8} fill="#fff" stroke={dev.online ? '#9fcabd' : '#e3aaa4'} strokeWidth={1} />
+                          <circle cx={-19} cy={48} r={2.6} fill={dev.online ? '#2e7f75' : '#c0564e'} />
+                          <text x={4} y={52} fontSize={9} fontWeight={700} textAnchor="middle" fill={dev.online ? '#3f6a60' : '#a44b44'}>
+                            {deviceStatusText(dev, r)}
+                          </text>
+                        </g>
+                      )}
                     </g>
                   )
                 })}
@@ -352,6 +381,7 @@ export function LiveMap() {
                   ? 'left .42s linear, top .42s linear'
                   : 'left 2.4s ease-in-out, top 2.4s ease-in-out',
                 zIndex: isActive ? 8 : 6,
+                opacity: mapMode === 'devices' ? 0.4 : 1,
               }}
             >
               <button
