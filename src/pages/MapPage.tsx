@@ -1,9 +1,8 @@
 import { useStore } from '@/store/useStore'
 import { LiveMap } from '@/components/map/LiveMap'
-import { TrackingCard } from '@/components/map/TrackingCard'
 import { SuggestionCard } from '@/components/map/SuggestionCard'
 import { CameraFloat } from '@/components/map/CameraFloat'
-import { roomShare } from '@/lib/diary'
+import { MapSidePanel } from '@/components/map/MapSidePanel'
 import type { MapMode } from '@/store/useStore'
 
 const MODES: { key: MapMode; label: string }[] = [
@@ -18,13 +17,9 @@ export function MapPage() {
   const pet = useStore((s) => s.pet)
   const openModal = useStore((s) => s.openModal)
   const toggleDrawer = useStore((s) => s.toggleDrawer)
-  const events = useStore((s) => s.events)
-  const home = useStore((s) => s.homeMap)
-
-  const shares = roomShare(events, home)
 
   return (
-    <div className="flex h-[calc(100vh-120px)] min-h-[620px] flex-col gap-3.5 max-[700px]:min-h-[560px]">
+    <div className="flex h-[calc(100vh-120px)] min-h-[620px] flex-col gap-3.5 max-[1000px]:h-auto max-[1000px]:min-h-0">
       <div className="flex items-center justify-between gap-3 max-[700px]:flex-col max-[700px]:items-stretch">
         <div className="flex items-center gap-3">
           <div>
@@ -60,39 +55,16 @@ export function MapPage() {
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center">
-        <LiveMap />
-        {mapMode === 'live' && <TrackingCard />}
-        {mapMode === 'live' && <SuggestionCard />}
-        <CameraFloat />
-        {mapMode === 'history' && (
-          <div className="absolute right-6 top-6 z-[9] w-[240px] rounded-[20px] border border-[#dce6e1] bg-white/95 p-4 shadow-softsm max-[700px]:left-3 max-[700px]:right-3 max-[700px]:top-3 max-[700px]:w-auto">
-            <b className="text-sm">今日停留热点</b>
-            <div className="mt-3 flex flex-col gap-2.5">
-              {shares.length ? (
-                shares.map((s) => (
-                  <div key={s.roomName} className="grid grid-cols-[52px_1fr_36px] items-center gap-2 text-xs">
-                    <span className="text-muted">{s.roomName}</span>
-                    <span className="h-2 overflow-hidden rounded-full bg-[#edf2ef]">
-                      <i className="block h-full rounded-full bg-gradient-to-r from-orange to-[#e0a878]" style={{ width: `${s.pct}%` }} />
-                    </span>
-                    <b className="text-right">{s.pct}%</b>
-                  </div>
-                ))
-              ) : (
-                <div className="text-xs text-muted">今日暂无跨房间记录</div>
-              )}
-            </div>
-            <div className="mt-3 text-[12px] leading-relaxed text-muted">
-              地图上按时间顺序绘制了当日跨房间轨迹与停留节点。
-            </div>
-          </div>
-        )}
-        {mapMode === 'devices' && (
-          <div className="absolute right-6 top-6 z-[9] w-[240px] rounded-[20px] border border-[#dce6e1] bg-white/95 p-4 text-xs text-muted shadow-softsm max-[700px]:left-3 max-[700px]:right-3 max-[700px]:top-3 max-[700px]:w-auto">
-            设备模式：点击地图上的设备图标进入对应控制页。
-          </div>
-        )}
+      {/* PC：地图主体 + 右侧固定信息面板；窄屏：地图在上、面板在下 */}
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_340px] gap-4 max-[1000px]:grid-cols-1">
+        <div className="relative flex min-h-0 items-center justify-center max-[1000px]:min-h-[48vh]">
+          <LiveMap />
+          {mapMode === 'live' && <SuggestionCard />}
+          <CameraFloat />
+        </div>
+        <aside className="min-h-0 overflow-auto max-[1000px]:overflow-visible">
+          <MapSidePanel />
+        </aside>
       </div>
     </div>
   )

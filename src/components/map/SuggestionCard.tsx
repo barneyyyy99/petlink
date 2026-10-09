@@ -28,7 +28,7 @@ export function SuggestionCard() {
   return (
     <div
       data-testid="suggestion-card"
-      className="animate-pop absolute left-4 top-4 right-[330px] z-[8] flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-[#f1dcc4] bg-orange-soft/95 px-4 py-3 shadow-softsm backdrop-blur max-[700px]:right-4"
+      className="animate-pop absolute left-4 right-4 top-4 z-[8] flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-[#f1dcc4] bg-orange-soft/95 px-4 py-3 shadow-softsm backdrop-blur"
     >
       <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-orange" />
       <div className="min-w-0 flex-1 text-xs leading-relaxed text-[#8b623f]">

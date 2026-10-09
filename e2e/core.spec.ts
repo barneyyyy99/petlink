@@ -108,10 +108,10 @@ test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '团子', level: 2 })).toBeVisible()
 })
 
-test('地图页显示实时追踪卡与客厅', async ({ page }) => {
+test('地图页显示右侧实时信息面板与客厅', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
-  await expect(page.getByTestId('tracking-card')).toBeVisible()
+  await expect(page.getByTestId('map-side-panel')).toBeVisible()
   await expect(page.getByTestId('tracking-room')).toHaveText('客厅')
 })
 
