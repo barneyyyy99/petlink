@@ -50,7 +50,7 @@ export function InspectorPanel({ editor }: { editor: Editor }) {
             onFocus={() => editor.setSelected(i)}
             onChange={(e) => { editor.setSelected(i); editor.renameAt(i, e.target.value) }}
           />
-          <button className="rounded-lg bg-teal-soft px-2 py-1 text-[10px] text-teal" onClick={() => editor.setSelected(i)}>
+          <button className="rounded-lg bg-teal-soft px-2 py-1 text-[12px] text-teal" onClick={() => editor.setSelected(i)}>
             编辑
           </button>
           <button
@@ -88,11 +88,11 @@ export function InspectorPanel({ editor }: { editor: Editor }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-[9px] text-muted">房间名称</label>
+              <label className="mb-1 block text-[11px] text-muted">房间名称</label>
               <input className="field !py-2 text-[11px]" value={room.name} onChange={(e) => editor.setName(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-[9px] text-muted">房间类型 / 家具</label>
+              <label className="mb-1 block text-[11px] text-muted">房间类型 / 家具</label>
               <select className="field !py-2 text-[11px]" value={room.kind} onChange={(e) => editor.setKind(e.target.value as Room['kind'])}>
                 {KINDS.map((k) => (
                   <option key={k.value} value={k.value}>{k.label}</option>

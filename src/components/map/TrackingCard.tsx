@@ -144,7 +144,7 @@ function Cell({ b, s }: { b: string; s: string }) {
   return (
     <div className="rounded-xl bg-[#f2f7f4] px-2.5 py-2">
       <b className="block truncate text-[11px]">{b}</b>
-      <span className="text-[10px] text-muted">{s}</span>
+      <span className="text-[12px] text-muted">{s}</span>
     </div>
   )
 }

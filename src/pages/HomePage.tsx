@@ -98,7 +98,7 @@ export function HomePage() {
               </div>
               <p data-testid="home-diary" className="mt-2 text-[15px] font-semibold leading-relaxed">“{diary}”</p>
               <div className="mt-2.5 flex items-center justify-between">
-                <span className="text-[10px] text-white/55">AI 第一人称文案，依据今日真实事件生成，非客观结论</span>
+                <span className="text-[12px] text-white/55">AI 第一人称文案，依据今日真实事件生成，非客观结论</span>
                 <button className="text-[11px] font-bold text-white underline/30 hover:opacity-80" onClick={() => goPage('records')}>完整日记 ›</button>
               </div>
             </div>

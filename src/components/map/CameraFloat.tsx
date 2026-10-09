@@ -71,7 +71,7 @@ export function CameraFloat() {
         </button>
       </div>
       <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]">
-        <span className="absolute left-3 top-3 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-1 text-[10px] font-bold text-white">
+        <span className="absolute left-3 top-3 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-1 text-[12px] font-bold text-white">
           ● LIVE · {camRoom?.name ?? '—'}
         </span>
         {cam ? (

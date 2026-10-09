@@ -50,7 +50,7 @@ export function FenceModal() {
         </div>
       )}
       <div className="relative h-[420px] overflow-hidden rounded-[22px] border border-line bg-[#f4f7f4]">
-        <div data-testid="fence-sync-badge" className="absolute left-3.5 top-3.5 z-[3] rounded-full border border-line bg-white/95 px-2.5 py-1.5 text-[10px] font-extrabold text-teal shadow-softsm">
+        <div data-testid="fence-sync-badge" className="absolute left-3.5 top-3.5 z-[3] rounded-full border border-line bg-white/95 px-2.5 py-1.5 text-[12px] font-extrabold text-teal shadow-softsm">
           已同步当前地图 · {rooms.length} 个房间 · V{version}
         </div>
         <svg

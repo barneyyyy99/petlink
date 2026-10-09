@@ -86,19 +86,19 @@ export function RecordsPage() {
           <div className="mb-1 text-xs font-bold text-[#4c5f59]">行为时间分布（估算）</div>
           {range === 'today' ? (
             <>
-              <p className="mb-2 text-[10px] text-muted">由今日事件时间线推导，单位为时长。</p>
+              <p className="mb-2 text-[12px] text-muted">由今日事件时间线推导，单位为时长。</p>
               <div className="mb-4 grid grid-cols-2 gap-2 text-center">
-                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.activeMinutes)}</b><span className="text-[10px] text-muted">活动时长</span></div>
-                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.restMinutes)}</b><span className="text-[10px] text-muted">休息时长</span></div>
+                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.activeMinutes)}</b><span className="text-[12px] text-muted">活动时长</span></div>
+                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.restMinutes)}</b><span className="text-[12px] text-muted">休息时长</span></div>
               </div>
             </>
           ) : (
-            <p className="mb-4 rounded-xl bg-[#f2f7f4] px-3 py-2.5 text-[10px] leading-relaxed text-muted">时长分布按单日推导，{rangeLabel}请切换到“今天”查看；下方为该区间的事件频次统计。</p>
+            <p className="mb-4 rounded-xl bg-[#f2f7f4] px-3 py-2.5 text-[12px] leading-relaxed text-muted">时长分布按单日推导，{rangeLabel}请切换到“今天”查看；下方为该区间的事件频次统计。</p>
           )}
 
           {/* 事件频次（次数） */}
           <div className="mb-1 text-xs font-bold text-[#4c5f59]">事件频次（{rangeLabel}）</div>
-          <p className="mb-2 text-[10px] text-muted">来自事件流的客观计数（非 AI 文案），单位：次。</p>
+          <p className="mb-2 text-[12px] text-muted">来自事件流的客观计数（非 AI 文案），单位：次。</p>
           {freq.map((b) => (
             <div key={b.l} className="mb-2.5 grid grid-cols-[70px_1fr_52px] items-center gap-2.5 text-xs">
               <span>{b.l}</span>
@@ -120,7 +120,7 @@ export function RecordsPage() {
           <div data-testid="diary-facts" className="mt-3.5 rounded-2xl border border-[#e0e8e4] bg-white/70 p-3">
             <div className="mb-2 flex items-center justify-between">
               <b className="text-[11px] text-[#4c5f59]">日记背后的真实事件</b>
-              <span className="text-[9px] text-muted">由今日事件时间线推导</span>
+              <span className="text-[11px] text-muted">由今日事件时间线推导</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <Fact v={`${todayDigest.eats + todayDigest.drinks} 次`} s="进食 / 饮水" />
@@ -142,7 +142,7 @@ export function RecordsPage() {
 
           {moodSignal && (
             <div data-testid="emotion-push" className="animate-pop mt-2.5 rounded-2xl border border-[#e4eae6] bg-white p-3.5 shadow-softsm">
-              <div className="text-[9px] uppercase tracking-wide text-muted">APP PUSH · 来自{pet.name}</div>
+              <div className="text-[11px] uppercase tracking-wide text-muted">APP PUSH · 来自{pet.name}</div>
               <b className="my-1.5 block text-sm">“今天听起来你有点没精神。”</b>
               <p className="m-0 mb-2.5 text-[11px] leading-relaxed text-[#6c7d77]">带我出去走走吧？我今天也想多活动一会儿 🐾</p>
               <div className="flex gap-2">
@@ -160,7 +160,7 @@ export function RecordsPage() {
             <button className="btn btn-primary" onClick={regenerateDiary}>换一条 AI 日记</button>
             <button data-testid="low-mood-btn" className="btn" disabled={!companionEnabled} onClick={triggerLowMood}>模拟主人情绪偏低</button>
           </div>
-          <p className="mt-2 text-[9px] leading-relaxed text-[#96a39f]">此处展示“陪伴线索”而非诊断或心理结论；提醒可关闭，并由用户主动授权。</p>
+          <p className="mt-2 text-[11px] leading-relaxed text-[#96a39f]">此处展示“陪伴线索”而非诊断或心理结论；提醒可关闭，并由用户主动授权。</p>
         </div>
       </div>
 
@@ -174,12 +174,12 @@ export function RecordsPage() {
                 <div key={e.id} data-testid="record-item" className="rounded-2xl border border-line bg-white p-4">
                   <div className="flex items-center justify-between">
                     <span className="badge">{new Date(e.timestamp).toTimeString().slice(0, 5)}</span>
-                    {roomName && <span className="text-[10px] text-muted">{roomName}</span>}
+                    {roomName && <span className="text-[12px] text-muted">{roomName}</span>}
                   </div>
                   <h4 className="my-2 text-base font-bold">{e.title}</h4>
                   <p className="m-0 text-xs text-muted">{e.detail}</p>
                   {(e.source?.length || e.media) && (
-                    <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8aa39b]">
+                    <div className="mt-2 flex items-center gap-2 text-[12px] text-[#8aa39b]">
                       {e.source?.length ? <span>来源：{e.source.join(' + ')}</span> : null}
                       {e.media ? <span className="rounded bg-[#eef3ef] px-1.5 py-0.5">{e.media.type === 'video' ? '▶ 视频' : '📷 图片'}</span> : null}
                     </div>
@@ -210,7 +210,7 @@ function Fact({ v, s }: { v: string; s: string }) {
   return (
     <div className="rounded-xl bg-[#f2f7f4] px-2 py-2">
       <b className="block truncate text-xs text-[#2f473f]">{v}</b>
-      <span className="text-[10px] text-muted">{s}</span>
+      <span className="text-[12px] text-muted">{s}</span>
     </div>
   )
 }

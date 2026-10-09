@@ -113,7 +113,7 @@ export function DeviceControlModal() {
             >
               {op?.phase === 'sending' ? '投喂中…' : `确认投喂 ${portion}g`}
             </button>
-            <p className="mt-2 text-[10px] text-muted">Demo 模拟投喂反馈；执行成功后将在记录中生成一条进食事件。</p>
+            <p className="mt-2 text-[12px] text-muted">Demo 模拟投喂反馈；执行成功后将在记录中生成一条进食事件。</p>
           </>
         )}
         {dev.type === 'water' && (
@@ -172,7 +172,7 @@ function Metric({ b, s }: { b: string; s: string }) {
   return (
     <div className="rounded-xl bg-[#f1f6f3] py-2.5">
       <b className="block text-lg">{b}</b>
-      <span className="text-[10px] text-muted">{s}</span>
+      <span className="text-[12px] text-muted">{s}</span>
     </div>
   )
 }

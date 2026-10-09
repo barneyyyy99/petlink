@@ -122,7 +122,7 @@ function Box({ b, s }: { b: string; s: string }) {
   return (
     <div className="rounded-xl bg-[#f1f6f3] px-2.5 py-2.5">
       <b className="block text-[13px]">{b}</b>
-      <span className="text-[10px] text-muted">{s}</span>
+      <span className="text-[12px] text-muted">{s}</span>
     </div>
   )
 }

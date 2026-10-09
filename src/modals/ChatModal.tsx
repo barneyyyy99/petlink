@@ -49,7 +49,7 @@ export function ChatModal() {
                 <div key={st.k} className="flex gap-2.5">
                   <div className="flex flex-col items-center">
                     <span
-                      className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ${
+                      className={`grid h-5 w-5 place-items-center rounded-full text-[12px] font-bold ${
                         done ? 'bg-teal text-white' : active ? 'bg-[#e0a53c] text-white' : 'bg-[#ece4d2] text-[#b09c73]'
                       }`}
                     >

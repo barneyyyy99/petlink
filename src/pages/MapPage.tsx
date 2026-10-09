@@ -83,7 +83,7 @@ export function MapPage() {
                 <div className="text-xs text-muted">今日暂无跨房间记录</div>
               )}
             </div>
-            <div className="mt-3 text-[10px] leading-relaxed text-muted">
+            <div className="mt-3 text-[12px] leading-relaxed text-muted">
               地图上按时间顺序绘制了当日跨房间轨迹与停留节点。
             </div>
           </div>

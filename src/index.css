@@ -40,7 +40,7 @@ body {
     @apply bg-transparent border border-line;
   }
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 bg-teal-soft text-teal text-[10px] font-extrabold;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 bg-teal-soft text-teal text-[11px] font-extrabold;
   }
   .badge-warn {
     @apply bg-orange-soft text-orange;

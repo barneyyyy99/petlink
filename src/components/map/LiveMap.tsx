@@ -414,7 +414,7 @@ export function LiveMap() {
               </span>
               {/* 常驻名字 + 当前行为标签：无需点击即可看清每只宠物的实时状态 */}
               <span
-                className="pointer-events-none absolute left-1/2 top-[72px] flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold shadow-softsm"
+                className="pointer-events-none absolute left-1/2 top-[72px] flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[12px] font-bold shadow-softsm"
                 style={{
                   borderColor: isActive ? color : '#e4ece8',
                   background: isActive ? '#ffffff' : 'rgba(255,255,255,.82)',
@@ -484,13 +484,13 @@ export function LiveMap() {
                 onClick={() => openCameraFloat()}
                 aria-label="查看实时画面"
               >
-                <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[9px] font-bold text-white">
+                <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[11px] font-bold text-white">
                   ● LIVE · {p.trackingSources.includes('camera') ? r?.name : '最近摄像头'}
                 </span>
                 <span className={behaviorAnim[p.behavior] ?? ''}>
                   <PetSvg behavior={p.behavior} size={56} />
                 </span>
-                <span className="absolute bottom-1.5 right-2 text-[9px] text-[#3f514b]">点击看大图 ›</span>
+                <span className="absolute bottom-1.5 right-2 text-[11px] text-[#3f514b]">点击看大图 ›</span>
               </button>
               <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                 {actions.map((a) => (
