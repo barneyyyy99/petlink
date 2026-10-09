@@ -33,18 +33,23 @@ export function MiniWidget() {
   }, [simulateNextRoom])
 
   const exit = () => {
+    const desktop = (window as unknown as { petlinkDesktop?: { close: () => void } }).petlinkDesktop
+    if (desktop?.close) {
+      desktop.close()
+      return
+    }
     window.close()
     window.location.href = window.location.pathname
   }
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#eef3ef]">
-      <header className="flex items-center justify-between gap-2 border-b border-line bg-white/90 px-3 py-2">
+      <header className="app-drag flex items-center justify-between gap-2 border-b border-line bg-white/90 px-3 py-2">
         <b className="flex items-center gap-1.5 text-xs">
           <span className="grid h-5 w-5 place-items-center rounded-md bg-teal text-[10px] text-white">🐾</span>
           {pet.name} · {room?.name ?? '定位中'} · {behaviorLabel[pet.behavior]}
         </b>
-        <div className="flex items-center gap-1.5">
+        <div className="app-no-drag flex items-center gap-1.5">
           <div className="flex rounded-full bg-[#e4ebe7] p-0.5" data-testid="mini-view-toggle">
             <button onClick={() => setView('3d')} className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${view === '3d' ? 'bg-white text-teal shadow-softsm' : 'text-[#6f817b]'}`}>3D</button>
             <button onClick={() => setView('flat')} className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${view === 'flat' ? 'bg-white text-teal shadow-softsm' : 'text-[#6f817b]'}`}>平面</button>

@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
+// Electron 桌面组件构建：资源用相对路径（file:// 加载）
+const isElectron = process.env.VITE_ELECTRON === '1'
+
 export default defineConfig({
+  base: isElectron ? './' : '/',
   plugins: [
     react(),
     VitePWA({

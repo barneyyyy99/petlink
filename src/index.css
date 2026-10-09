@@ -20,6 +20,14 @@ body {
   color: #20322f;
 }
 
+/* Electron 无边框窗口拖拽区域 */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 @layer components {
   .card {
     @apply bg-white/95 border border-line rounded-3xl p-5 shadow-softsm;
