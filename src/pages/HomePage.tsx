@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
-import { PetSvg } from '@/components/PetSvg'
+import { PetFace } from '@/components/PetFace'
 import { behaviorLabel, behaviorMeta } from '@/lib/tracking'
 import { summarizeDay, buildDiary, eventsForPet, filterByRange } from '@/lib/diary'
+import { blobToDataUrl, downscaleDataUrl } from '@/lib/image'
 import { Icon, type IconName } from '@/components/Icon'
 
 export function HomePage() {
@@ -9,6 +11,7 @@ export function HomePage() {
   const pets = useStore((s) => s.pets)
   const activePetId = useStore((s) => s.activePetId)
   const setActivePet = useStore((s) => s.setActivePet)
+  const setPetPhoto = useStore((s) => s.setPetPhoto)
   const room = useStore(currentRoom)
   const goPage = useStore((s) => s.goPage)
   const openCamera = useStore((s) => s.openCamera)
@@ -21,6 +24,20 @@ export function HomePage() {
   const moodSignal = useStore((s) => s.moodSignal)
   const diarySeed = useStore((s) => s.diarySeed)
   const regenerateDiary = useStore((s) => s.regenerateDiary)
+  const toast = useStore((s) => s.toast)
+  const photoRef = useRef<HTMLInputElement>(null)
+
+  const onPickPhoto = async (file?: File) => {
+    if (!file) return
+    try {
+      const raw = await blobToDataUrl(file)
+      const small = await downscaleDataUrl(raw, 480, 0.82)
+      setPetPhoto(pet.id, small)
+      toast('success', `已更新${pet.name}的照片`)
+    } catch {
+      toast('error', '照片读取失败，请换一张')
+    }
+  }
 
   const env = room?.environment
   const tempRule = rules.find((r) => r.trigger === 'temp_above' && r.enabled)
@@ -63,7 +80,7 @@ export function HomePage() {
               }`}
             >
               <span className="grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-[#fff8e9]">
-                <PetSvg behavior={p.behavior} size={22} />
+                <PetFace pet={p} size={28} />
               </span>
               {p.name}
             </button>
@@ -75,15 +92,17 @@ export function HomePage() {
         <div>
           <div className="relative min-h-[320px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#2b8176] to-[#4b9c8e] p-8 text-white shadow-soft">
             <div className="eyebrow text-white/70">今日守护对象</div>
-            <h2 className="my-3 text-5xl font-extrabold tracking-tight">{pet.name}</h2>
-            <div className="my-2.5 flex items-center gap-2 text-lg font-bold">
-              <span>●</span>
-              <span>{behaviorLabel[pet.behavior]}</span>
+            {/* 宠物名 + 其右侧的实时状态 */}
+            <div className="my-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <h2 className="text-5xl font-extrabold tracking-tight">{pet.name}</h2>
+              <div className="text-sm">
+                <div className="flex items-center gap-2 text-lg font-bold"><span>●</span><span>{behaviorLabel[pet.behavior]}</span></div>
+                <div className="mt-1 opacity-90">{behaviorMeta[pet.behavior]}</div>
+                <div className="mt-1 flex items-center gap-1.5 whitespace-nowrap opacity-90"><span className="inline-block h-2 w-2 rounded-full bg-emerald-300" /> 在线 · 项圈电量：{pet.collarBattery}%</div>
+              </div>
             </div>
-            <div className="mt-2 text-sm opacity-90">{behaviorMeta[pet.behavior]}</div>
-            <div className="mt-4 flex items-center gap-1.5 text-sm opacity-90"><span className="inline-block h-2 w-2 rounded-full bg-emerald-300" /> 在线 · 项圈 {pet.collarBattery}%</div>
 
-            {/* AI 宠物日记：放在首卡醒目位置，按当前宠物真实事件生成 */}
+            {/* AI 宠物日记 */}
             <div className="relative z-[3] mt-5 max-w-[60%] rounded-2xl border border-white/25 bg-white/12 p-4 backdrop-blur max-[1000px]:max-w-full">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white/85">
@@ -97,15 +116,25 @@ export function HomePage() {
                 </button>
               </div>
               <p data-testid="home-diary" className="mt-2 text-[15px] font-semibold leading-relaxed">“{diary}”</p>
-              <div className="mt-2.5 flex items-center justify-between">
-                <span className="text-[12px] text-white/55">AI 第一人称文案，依据今日真实事件生成，非客观结论</span>
-                <button className="text-[11px] font-bold text-white underline/30 hover:opacity-80" onClick={() => goPage('records')}>完整日记 ›</button>
+              <div className="mt-2.5 flex justify-end">
+                <button className="text-[11px] font-bold text-white hover:opacity-80" onClick={() => goPage('records')}>完整日记 ›</button>
               </div>
             </div>
-            <div className="absolute bottom-6 right-8 grid h-[200px] w-[200px] place-items-center rounded-full bg-[rgba(244,233,208,.92)] shadow-soft max-[1000px]:opacity-70">
-              <PetSvg behavior={pet.behavior} size={150} />
+
+            {/* 宠物头像（支持上传真实照片，地图沿用） */}
+            <div className="absolute bottom-6 right-8 grid h-[200px] w-[200px] place-items-center overflow-hidden rounded-full bg-[rgba(244,233,208,.92)] shadow-soft max-[1000px]:opacity-80">
+              <PetFace pet={pet} size={pet.photo ? 200 : 150} />
             </div>
-            <button className="btn btn-ghost absolute bottom-6 right-8 z-[3] inline-flex items-center gap-1.5 border-white/40 bg-[rgba(37,68,62,.28)] text-white" onClick={() => goPage('map')}>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" data-testid="home-photo-input" onChange={(e) => onPickPhoto(e.target.files?.[0])} />
+            <button
+              className="absolute bottom-[18px] right-[22px] z-[4] grid h-9 w-9 place-items-center rounded-full border border-white/50 bg-[rgba(37,68,62,.5)] text-white backdrop-blur"
+              data-testid="home-upload-photo"
+              title="上传真实照片"
+              onClick={() => photoRef.current?.click()}
+            >
+              <Icon name="camera" size={16} />
+            </button>
+            <button className="btn btn-ghost absolute bottom-6 left-8 z-[3] inline-flex items-center gap-1.5 border-white/40 bg-[rgba(37,68,62,.28)] text-white" onClick={() => goPage('map')}>
               <Icon name="map" size={15} /> 打开地图
             </button>
           </div>
@@ -121,7 +150,6 @@ export function HomePage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2"><b className="text-lg">{pet.name}今日状态分</b><span className="badge">● 无异常</span></div>
-                <div className="mt-1.5 text-sm text-muted">按今日真实活动推导 · 透明可解释</div>
               </div>
               <div className="text-right"><div className="text-5xl font-extrabold text-teal">{score}</div></div>
             </div>

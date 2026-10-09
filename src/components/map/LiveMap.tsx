@@ -4,7 +4,7 @@ import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
 import { floorColor, WALL } from './furniture'
 import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
-import { PetSvg } from '@/components/PetSvg'
+import { PetFace } from '@/components/PetFace'
 import { behaviorLabel, roomDevices } from '@/lib/tracking'
 import { relativeTime, timeHM } from '@/lib/time'
 import { ambianceFor } from '@/lib/ambiance'
@@ -410,7 +410,7 @@ export function LiveMap() {
                   boxShadow: isActive ? `0 0 0 6px ${color}22, 0 16px 26px rgba(53,86,77,.19)` : '0 10px 20px rgba(53,86,77,.14)',
                 }}
               >
-                <PetSvg behavior={p.behavior} size={56} />
+                <PetFace pet={p} size={60} />
               </button>
               {/* 行为徽标（图标，默认不显文字，符合低文字原则） */}
               <span
@@ -479,7 +479,6 @@ export function LiveMap() {
                 </div>
                 <button className="grid h-6 w-6 place-items-center rounded-lg bg-[#eef3f0] text-[#6e7f79]" onClick={() => setPopover(null)} aria-label="关闭">×</button>
               </div>
-              <div className="mt-1.5 text-[11px] text-muted">详细视频 / 定位已在右侧面板展开</div>
               <div className="mt-2 grid grid-cols-3 gap-1.5">
                 {actions.map((a) => (
                   <button key={a.label} className="rounded-xl border border-line bg-white px-1 py-2 text-[11px] font-bold text-[#53645e] hover:border-[#cde3dc] hover:bg-teal-soft hover:text-teal" onClick={a.onClick}>
@@ -493,12 +492,6 @@ export function LiveMap() {
             </div>
           )
         })()}
-      </div>
-
-      <div className="absolute bottom-6 left-6 z-[5] flex gap-3 rounded-2xl border border-line bg-white/90 px-3 py-2.5 text-[11px] text-muted">
-        <span>● {pets.length} 只宠物实时更新</span>
-        <span>点击 Avatar 看它/叫它/陪它</span>
-        <span>设备图标可控制</span>
       </div>
     </div>
   )

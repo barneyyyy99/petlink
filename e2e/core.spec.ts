@@ -118,6 +118,15 @@ test('“我的”页按类别分组 + 围栏可从地图页进入', async ({ pa
   await expect(page.getByTestId('fence-modal')).toBeVisible()
 })
 
+test('首页上传宠物照片后地图沿用', async ({ page }) => {
+  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+  await gotoFresh(page)
+  await page.getByTestId('home-photo-input').setInputFiles({ name: 'cat.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
+  await expect(page.locator('img[alt="毛球"]').first()).toBeVisible({ timeout: 4000 })
+  await page.getByTestId('nav-map').click()
+  await expect(page.getByTestId('pet-avatar').locator('img')).toBeVisible()
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()

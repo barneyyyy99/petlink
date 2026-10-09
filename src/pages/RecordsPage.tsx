@@ -83,23 +83,19 @@ export function RecordsPage() {
             <span className="badge" data-testid="records-count">{ranged.length} 条事件</span>
           </div>
 
-          {/* 行为时间分布（时长，仅“今天”有意义；更长区间只给日均提示） */}
-          <div className="mb-1 text-xs font-bold text-[#4c5f59]">行为时间分布（估算）</div>
-          {range === 'today' ? (
+          {/* 行为时间分布（时长，仅“今天”有意义） */}
+          {range === 'today' && (
             <>
-              <p className="mb-2 text-[12px] text-muted">由今日事件时间线推导，单位为时长。</p>
+              <div className="mb-2 text-xs font-bold text-[#4c5f59]">行为时间分布</div>
               <div className="mb-4 grid grid-cols-2 gap-2 text-center">
                 <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.activeMinutes)}</b><span className="text-[12px] text-muted">活动时长</span></div>
                 <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.restMinutes)}</b><span className="text-[12px] text-muted">休息时长</span></div>
               </div>
             </>
-          ) : (
-            <p className="mb-4 rounded-xl bg-[#f2f7f4] px-3 py-2.5 text-[12px] leading-relaxed text-muted">时长分布按单日推导，{rangeLabel}请切换到“今天”查看；下方为该区间的事件频次统计。</p>
           )}
 
           {/* 事件频次（次数） */}
-          <div className="mb-1 text-xs font-bold text-[#4c5f59]">事件频次（{rangeLabel}）</div>
-          <p className="mb-2 text-[12px] text-muted">来自事件流的客观计数（非 AI 文案），单位：次。</p>
+          <div className="mb-2 text-xs font-bold text-[#4c5f59]">事件频次（{rangeLabel}）</div>
           {freq.map((b) => (
             <div key={b.l} className="mb-2.5 grid grid-cols-[70px_1fr_52px] items-center gap-2.5 text-xs">
               <span>{b.l}</span>
@@ -115,14 +111,10 @@ export function RecordsPage() {
             <span className="badge badge-warn">情绪陪伴</span>
           </div>
           <div data-testid="diary-text" className="my-4 text-lg font-bold leading-relaxed tracking-tight">“{diary}”</div>
-          <small className="text-muted">↑ AI 第一人称文案，依据{pet.name}今日真实事件生成（非客观结论）。以下为客观陪伴线索与设置。</small>
 
-          {/* 关联真实事件：日记不只是文字，背后是进食/活动/休息等真实数据 */}
-          <div data-testid="diary-facts" className="mt-3.5 rounded-2xl border border-[#e0e8e4] bg-white/70 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <b className="text-[11px] text-[#4c5f59]">日记背后的真实事件</b>
-              <span className="text-[11px] text-muted">由今日事件时间线推导</span>
-            </div>
+          {/* 关联真实事件：日记背后的进食/活动/休息等真实数据 */}
+          <div data-testid="diary-facts" className="mt-1 rounded-2xl border border-[#e0e8e4] bg-white/70 p-3">
+            <b className="mb-2 block text-[11px] text-[#4c5f59]">日记背后的真实事件</b>
             <div className="grid grid-cols-3 gap-2 text-center">
               <Fact v={`${todayDigest.eats + todayDigest.drinks} 次`} s="进食 / 饮水" />
               <Fact v={fmtDuration(todayDigest.activeMinutes)} s="活动时长" />
@@ -161,7 +153,6 @@ export function RecordsPage() {
             <button className="btn btn-primary" onClick={regenerateDiary}>换一条 AI 日记</button>
             {demoMode && <button data-testid="low-mood-btn" className="btn" disabled={!companionEnabled} onClick={triggerLowMood}>模拟情绪偏低</button>}
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-[#96a39f]">此处展示“陪伴线索”而非诊断或心理结论；提醒可关闭，并由用户主动授权。</p>
         </div>
       </div>
 

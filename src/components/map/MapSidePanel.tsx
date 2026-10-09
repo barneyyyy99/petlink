@@ -70,7 +70,7 @@ export function MapSidePanel() {
         ) : (
           <div className="text-xs text-muted">今日暂无跨房间记录。</div>
         )}
-        <div className="mt-3 text-[11px] leading-relaxed text-muted">按今日跨房间时间线推导停留时长；点击地图上的编号节点可查看该次迁移事件与影像。</div>
+        <div className="mt-3 text-[11px] leading-relaxed text-muted">点击地图上的编号节点可查看该次迁移事件。</div>
       </Panel>
     )
   }
@@ -89,7 +89,6 @@ export function MapSidePanel() {
             )
           })}
         </div>
-        <div className="mt-3 text-[11px] leading-relaxed text-muted">点击任一设备进入控制页；双击地图上的摄像头可直接看画面。</div>
       </Panel>
     )
   }
