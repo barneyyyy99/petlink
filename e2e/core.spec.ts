@@ -120,9 +120,20 @@ test('“我的”页按类别分组 + 围栏可从地图页进入', async ({ pa
 
 test('浮窗模式仅显示户型地图（无主导航）', async ({ page }) => {
   await page.goto('/?mini=1')
-  await expect(page.getByTestId('live-map-svg')).toBeVisible()
   await expect(page.getByTestId('mini-exit')).toBeVisible()
   await expect(page.getByTestId('nav-home')).toHaveCount(0)
+})
+
+test('浮窗 3D 立体房间模式 + 风格可切换', async ({ page }) => {
+  await page.goto('/?mini=1')
+  // 默认 3D：显示风格切换 + 当前房间 3D 标识
+  await expect(page.getByTestId('mini-style-switch')).toBeVisible()
+  await expect(page.getByText('客厅 · 3D')).toBeVisible()
+  await page.getByRole('button', { name: '夜间' }).click()
+  await expect(page.getByText('客厅 · 3D')).toBeVisible()
+  // 切到平面地图
+  await page.getByRole('button', { name: '平面' }).click()
+  await expect(page.getByTestId('live-map-svg')).toBeVisible()
 })
 
 test('首页上传宠物照片后地图沿用', async ({ page }) => {
