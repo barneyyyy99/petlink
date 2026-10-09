@@ -47,9 +47,9 @@ export function CameraModal() {
       <div className="mt-1.5 text-[11px] text-muted">
         {cam
           ? aligned
-            ? `毛球位于${room?.name} · 当前画面与宠物位置一致`
-            : `毛球位于${room?.name} · 当前展示最近可用的${cam.name}画面`
-          : `毛球位于${room?.name} · 使用项圈 BLE/IMU 持续定位`}
+            ? `${pet.name}位于${room?.name} · 当前画面与宠物位置一致`
+            : `${pet.name}位于${room?.name} · 当前展示最近可用的${cam.name}画面`
+          : `${pet.name}位于${room?.name} · 使用项圈信号持续定位`}
       </div>
       <div className="mt-3 flex items-center justify-between gap-2.5">
         <div className="flex flex-wrap gap-1.5">

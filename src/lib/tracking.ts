@@ -26,7 +26,7 @@ export function handoffMessage(
     case 'lost':
       return `${from}摄像头已失去目标`
     case 'transit':
-      return `项圈 BLE / IMU 正在保持连续定位`
+      return `项圈信号正在保持连续定位`
     case 'searching':
       return `正在寻找${to}房间摄像头…`
     case 'detected':
@@ -34,19 +34,19 @@ export function handoffMessage(
     case 'completed':
       return `接力完成：已自动切换至${to}摄像头`
     case 'no_camera':
-      return `当前位置仍确认在${to}；该房间暂无直接摄像头，BLE/IMU 继续追踪`
+      return `当前位置仍确认在${to}；该房间暂无直接摄像头，项圈信号继续追踪`
     default:
-      return hasCamera ? `${to}摄像头持续识别` : `项圈 BLE 持续定位`
+      return hasCamera ? `${to}摄像头持续识别` : `项圈信号持续定位`
   }
 }
 
-/** 追踪来源标签 */
+/** 追踪来源标签（面向用户，不用 BLE/IMU 术语） */
 export function trackingSourceLabel(sources: string[]): string {
   const has = (s: string) => sources.includes(s)
-  if (has('camera') && has('ble')) return '视觉 + BLE'
-  if (has('ble') && has('imu')) return 'BLE + IMU'
+  if (has('camera') && has('ble')) return '视觉 + 项圈'
+  if (has('ble') && has('imu')) return '项圈信号'
   if (has('camera')) return '视觉'
-  if (has('ble')) return 'BLE'
+  if (has('ble')) return '项圈信号'
   return '连续定位'
 }
 

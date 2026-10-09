@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useStore, currentRoom, deviceById } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
-import { behaviorLabel, roomDevices, roomHasDevice } from '@/lib/tracking'
+import { behaviorLabel, roomDevices, roomHasDevice, trackingSourceLabel } from '@/lib/tracking'
 import { relativeTime } from '@/lib/time'
 import { eventsForPet, filterByRange, roomStay } from '@/lib/diary'
 import { cameraView, locateState } from '@/lib/status'
@@ -36,7 +36,7 @@ export function MapSidePanel() {
     return () => clearInterval(t)
   }, [])
 
-  const srcLabel = pet.trackingSources.includes('camera') ? '视觉 + BLE' : pet.trackingSources.includes('imu') ? 'BLE + IMU' : 'BLE'
+  const srcLabel = trackingSourceLabel(pet.trackingSources)
   const hasCamInRoom = !!room && roomHasDevice(devices, room.id, 'camera')
   const view = cameraView(pet, cam, handoff)
   const locate = locateState(pet, handoff, hasCamInRoom)
@@ -45,7 +45,7 @@ export function MapSidePanel() {
       ? handoff.message
       : cam
       ? `${cam.name}持续识别 · ${room?.environment.temperature.toFixed(1)}℃ / 湿度 ${room?.environment.humidity}%`
-      : '项圈 BLE 持续定位 · 当前房间暂无摄像头'
+      : '项圈信号持续定位 · 当前房间暂无摄像头'
 
   const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
   const lastEvent = [...filterByRange(petEvents, 'today', Date.now())].sort((a, b) => b.timestamp - a.timestamp)[0]

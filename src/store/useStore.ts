@@ -404,7 +404,7 @@ export const useStore = create<StoreState>()(
   refreshTracking: () => {
     const s = get()
     const hasCam = roomHasDevice(s.devices, s.pet.roomId, 'camera')
-    // 置信度按定位来源取稳定值（视觉+BLE 高于纯 BLE/IMU），不随刷新随机抖动
+    // 置信度按定位来源取稳定值（视觉优于纯项圈信号），不随刷新随机抖动
     const confidence = hasCam ? 0.97 : 0.9
     set(
       patchActive(s, (p) => ({
@@ -415,7 +415,7 @@ export const useStore = create<StoreState>()(
       })),
     )
     const room = s.homeMap.rooms.find((r) => r.id === s.pet.roomId)
-    get().toast('success', `定位已刷新：${room?.name ?? ''} · ${hasCam ? '视觉 + BLE' : 'BLE / IMU'} · 置信度 ${Math.round(confidence * 100)}%`)
+    get().toast('success', `定位已刷新：${room?.name ?? ''} · ${hasCam ? '视觉 + 项圈 · 视觉已确认' : '项圈信号 · 辅助定位中'}`)
   },
 
       setRoomEnvironment: (roomId, temperature, humidity) => {
@@ -613,7 +613,7 @@ function initComplexActions() {
       s.addEvent({
         type: 'room_change',
         title: `${petName}：${fromName} → ${to.name}`,
-        detail: '跨房间追踪中 · BLE/IMU 保持连续定位',
+        detail: '跨房间追踪中 · 项圈信号保持连续定位',
         petId: s.activePetId,
         fromRoomId: from?.id,
         toRoomId: to.id,
@@ -624,7 +624,7 @@ function initComplexActions() {
 
       // 3) 接力时序
       handoffTimers.push(
-        window.setTimeout(() => set({ handoff: { phase: 'transit', message: '项圈 BLE / IMU 正在保持连续定位', fromRoomId: from?.id, toRoomId: to.id } }), 500),
+        window.setTimeout(() => set({ handoff: { phase: 'transit', message: '项圈信号正在保持连续定位', fromRoomId: from?.id, toRoomId: to.id } }), 500),
       )
       handoffTimers.push(
         window.setTimeout(() => set({ handoff: { phase: 'searching', message: `正在寻找${to.name}房间摄像头…`, fromRoomId: from?.id, toRoomId: to.id } }), 950),
@@ -643,7 +643,7 @@ function initComplexActions() {
             st.toast('success', `摄像头接力完成：${fromName} → ${to.name}`)
           } else {
             set({
-              handoff: { phase: 'no_camera', message: `${to.name}暂无直接摄像头，BLE/IMU 继续追踪；保留最近摄像头画面`, fromRoomId: from?.id, toRoomId: to.id, activeCameraDeviceId: camId ?? undefined },
+              handoff: { phase: 'no_camera', message: `${to.name}暂无直接摄像头，项圈信号继续追踪；保留最近摄像头画面`, fromRoomId: from?.id, toRoomId: to.id, activeCameraDeviceId: camId ?? undefined },
               ...patchActive(st, (p) => ({ ...p, confidence: 0.93, trackingSources: ['ble', 'imu'], lastUpdatedAt: Date.now() })),
               activeCameraId: camId,
             })

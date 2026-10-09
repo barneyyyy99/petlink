@@ -166,7 +166,7 @@ export function HomePage() {
             <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">我的家</h3><button className="text-xs font-bold text-teal" onClick={() => goPage('map')}>进入地图 →</button></div>
             <div className="flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-4">
               <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
-              <div><b className="text-sm">{pet.name}在 {room?.name}</b><p className="mt-1 text-xs text-muted">{env?.temperature.toFixed(1)}℃ · 湿度 {env?.humidity}% · {room?.devices.length ? '摄像头在线' : 'BLE 定位在线'}</p></div>
+              <div><b className="text-sm">{pet.name}在 {room?.name}</b><p className="mt-1 text-xs text-muted">{env?.temperature.toFixed(1)}℃ · 湿度 {env?.humidity}% · {room?.devices.length ? '摄像头在线' : '项圈定位在线'}</p></div>
             </div>
             {tempHigh && (
               <div className="mt-2.5 flex items-start gap-3 rounded-2xl border border-[#f3dec8] bg-orange-soft p-4">

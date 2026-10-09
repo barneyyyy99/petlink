@@ -29,14 +29,14 @@ export function MePage() {
   }
 
   const testPush = async () => {
-    if (!pushSupported()) return toast('warn', '当前环境不支持 Web Push（需 https 部署 + 已安装/支持的浏览器）')
+    if (!pushSupported()) return toast('warn', '当前环境不支持消息通知（需 https 部署且浏览器支持）')
     const ok = await ensureNotificationPermission()
     if (!ok) return toast('warn', '请先授权通知')
     try {
-      const sent = await sendTestPush({ title: 'PetLink 测试推送', body: '这是一条来自服务器的真实推送 🐾', url: '/' })
-      toast(sent ? 'success' : 'error', sent ? '已请求服务器推送，稍候将收到系统通知' : '推送发送失败（服务端未配置或网络问题）')
+      const sent = await sendTestPush({ title: 'PetLink 测试通知', body: '这是一条来自服务器的消息通知 🐾', url: '/' })
+      toast(sent ? 'success' : 'error', sent ? '已发送，稍候将收到系统通知' : '发送失败（服务端未配置或网络问题）')
     } catch {
-      toast('error', '推送请求失败')
+      toast('error', '通知发送失败')
     }
   }
 
@@ -84,10 +84,10 @@ export function MePage() {
 
           <div className="card mt-4 flex items-center justify-between">
             <div>
-              <b className="text-sm">服务器推送（Web Push）</b>
-              <p className="mt-1 text-xs text-muted">通过 VAPID 从服务器主动推送，应用切到后台/关闭也能收到。点击可发送一条真实测试推送。</p>
+              <b className="text-sm">消息通知</b>
+              <p className="mt-1 text-xs text-muted">开启后，走失 / 找人 / 陪伴提醒会推送到系统通知栏，应用在后台或关闭也能收到。点击发送一条测试通知。</p>
             </div>
-            <button className="btn whitespace-nowrap" data-testid="test-push" onClick={testPush}>发送测试推送</button>
+            <button className="btn whitespace-nowrap" data-testid="test-push" onClick={testPush}>发送测试通知</button>
           </div>
 
           <div className="card mt-4 flex items-center justify-between">

@@ -88,7 +88,7 @@ export function AvatarPanel() {
             <Box b={relativeTime(pet.lastUpdatedAt)} s="最近更新" />
           </div>
           <div className="text-xs text-muted">
-            定位依据：{pet.trackingSources.includes('camera') ? `${room?.name}摄像头 + 项圈 BLE` : '项圈 BLE + 最近摄像头辅助'} · 置信度 {Math.round(pet.confidence * 100)}%
+            定位依据：{pet.trackingSources.includes('camera') ? `${room?.name}摄像头 + 项圈信号` : '项圈信号 + 最近摄像头辅助'} · {pet.trackingSources.includes('camera') ? '视觉已确认' : '辅助定位中'}
           </div>
           {room && (
             <div className="mt-2 flex flex-wrap gap-1.5">

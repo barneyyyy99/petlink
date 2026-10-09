@@ -89,7 +89,7 @@ export function CameraFloat() {
       <div className="px-3.5 pb-3.5 pt-2.5">
         <div className="text-[11px] text-muted">
           {!cam
-            ? `${pet.name}位于${room?.name} · 使用项圈 BLE/IMU 持续定位`
+            ? `${pet.name}位于${room?.name} · 使用项圈信号持续定位`
             : view.detected
             ? `${pet.name}位于${room?.name} · 演示画面（示例，未接入真实摄像头）`
             : `${pet.name}位于${room?.name} · 当前${cam.name}画面未检测到${pet.name}（示例画面）`}
