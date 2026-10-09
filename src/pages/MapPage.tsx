@@ -51,6 +51,9 @@ export function MapPage() {
               </button>
             ))}
           </div>
+          <button className="btn whitespace-nowrap" data-testid="map-fence-btn" onClick={() => openModal('fence')}>
+            围栏
+          </button>
           <button className="btn whitespace-nowrap" data-testid="edit-map-btn" onClick={() => openModal('mapBuilder')}>
             编辑户型
           </button>

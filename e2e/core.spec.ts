@@ -86,6 +86,18 @@ test('移动端(390px)无横向滚动、导航可用、Esc 关闭弹层', async 
   await expect(page.getByTestId('auth-modal')).toBeHidden()
 })
 
+test('“我的”页按类别分组 + 围栏可从地图页进入', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-me').click()
+  await expect(page.getByTestId('me-group-家庭与设备')).toBeVisible()
+  await expect(page.getByTestId('me-group-宠物安全')).toBeVisible()
+  await expect(page.getByTestId('me-group-互动与陪伴')).toBeVisible()
+  await expect(page.getByTestId('me-group-个人设置')).toBeVisible()
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('map-fence-btn').click()
+  await expect(page.getByTestId('fence-modal')).toBeVisible()
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
