@@ -49,7 +49,21 @@ function furnStyle(type: FurnitureType): { h: number; base: string } {
 }
 
 /** 立体卡通房间：仅显示当前宠物所处的房间，基于其布局做等距 3D 建模。风格可切换。 */
-export function Room3D({ room, pet, style }: { room: Room; pet: PetState; style: RoomStyle }) {
+export function Room3D({
+  room,
+  pet,
+  style,
+  transparent = false,
+  showLabel = true,
+}: {
+  room: Room
+  pet: PetState
+  style: RoomStyle
+  /** 透明背景：只显示等距房间与宠物，四周透出桌面（桌面组件用） */
+  transparent?: boolean
+  /** 是否显示左上角“房间名 · 3D”标签 */
+  showLabel?: boolean
+}) {
   const s = STYLES[style]
   const b = roomBounds(room)
   const RW = b.w
@@ -91,7 +105,10 @@ export function Room3D({ room, pet, style }: { room: Room; pet: PetState; style:
   const petPy = (petP.Y / VH) * 100
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl" style={{ background: s.bg }}>
+    <div
+      className={`relative h-full w-full ${transparent ? '' : 'overflow-hidden rounded-2xl'}`}
+      style={{ background: transparent ? 'transparent' : s.bg }}
+    >
       <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full">
         {/* 后墙 */}
         <polygon points={pts(leftWall)} fill={s.wallL} stroke={s.line} strokeWidth={2} strokeLinejoin="round" />
@@ -139,9 +156,11 @@ export function Room3D({ room, pet, style }: { room: Room; pet: PetState; style:
       </div>
 
       {/* 房间名 */}
-      <div className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: s.text, background: 'rgba(255,255,255,.55)' }}>
-        {room.name} · 3D
-      </div>
+      {showLabel && (
+        <div className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: s.text, background: 'rgba(255,255,255,.55)' }}>
+          {room.name} · 3D
+        </div>
+      )}
     </div>
   )
 }

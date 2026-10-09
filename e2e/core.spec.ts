@@ -124,16 +124,14 @@ test('浮窗模式仅显示户型地图（无主导航）', async ({ page }) => 
   await expect(page.getByTestId('nav-home')).toHaveCount(0)
 })
 
-test('浮窗 3D 立体房间模式 + 风格可切换', async ({ page }) => {
+test('桌面组件仅显示 3D 房间与宠物（无边框/无其他元素）', async ({ page }) => {
   await page.goto('/?mini=1')
-  // 默认 3D：显示风格切换 + 当前房间 3D 标识
-  await expect(page.getByTestId('mini-style-switch')).toBeVisible()
-  await expect(page.getByText('客厅 · 3D')).toBeVisible()
-  await page.getByRole('button', { name: '夜间' }).click()
-  await expect(page.getByText('客厅 · 3D')).toBeVisible()
-  // 切到平面地图
-  await page.getByRole('button', { name: '平面' }).click()
-  await expect(page.getByTestId('live-map-svg')).toBeVisible()
+  // 只有 3D 房间 + 宠物
+  await expect(page.getByTestId('mini-3d-room')).toBeVisible()
+  await expect(page.getByTestId('mini-3d-room').locator('svg').first()).toBeVisible()
+  // 无浏览器式 chrome：无风格切换 / 无 3D·平面 toggle
+  await expect(page.getByTestId('mini-style-switch')).toHaveCount(0)
+  await expect(page.getByTestId('mini-view-toggle')).toHaveCount(0)
 })
 
 test('首页上传宠物照片后地图沿用', async ({ page }) => {
