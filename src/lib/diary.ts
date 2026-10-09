@@ -45,6 +45,24 @@ export function roomShare(events: PetEvent[], home: HomeMap): { roomName: string
   return roomVisits.map((r) => ({ roomName: r.roomName, pct: Math.round((r.count / total) * 100) }))
 }
 
+/** 房间停留时长（按 room_change 时间线推导：进入某房间到下一次迁移/此刻的时长），返回占比+分钟 */
+export function roomStay(events: PetEvent[], home: HomeMap, now: number): { roomName: string; pct: number; minutes: number }[] {
+  const roomName = (id?: string) => home.rooms.find((r) => r.id === id)?.name ?? '其他'
+  const moves = events.filter((e) => e.type === 'room_change').sort((a, b) => a.timestamp - b.timestamp)
+  if (!moves.length) return []
+  const mins = new Map<string, number>()
+  for (let i = 0; i < moves.length; i++) {
+    const name = roomName(moves[i].toRoomId ?? moves[i].roomId)
+    const end = i + 1 < moves.length ? moves[i + 1].timestamp : now
+    const dur = Math.max(0, (end - moves[i].timestamp) / 60000)
+    mins.set(name, (mins.get(name) ?? 0) + dur)
+  }
+  const total = [...mins.values()].reduce((a, b) => a + b, 0) || 1
+  return [...mins.entries()]
+    .map(([roomName, minutes]) => ({ roomName, minutes: Math.round(minutes), pct: Math.round((minutes / total) * 100) }))
+    .sort((a, b) => b.minutes - a.minutes)
+}
+
 /** 取某只宠物的事件：带 petId 的按 petId 归属；历史遗留未标注的归到主宠物 */
 export function eventsForPet(events: PetEvent[], petId: string, primaryPetId?: string): PetEvent[] {
   return events.filter((e) => (e.petId ?? primaryPetId) === petId)

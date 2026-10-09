@@ -6,8 +6,9 @@ import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
 import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, roomDevices } from '@/lib/tracking'
-import { relativeTime } from '@/lib/time'
+import { relativeTime, timeHM } from '@/lib/time'
 import { ambianceFor } from '@/lib/ambiance'
+import { eventsForPet } from '@/lib/diary'
 import type { Point, PetBehavior, Device } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
@@ -138,6 +139,7 @@ export function LiveMap() {
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
   const openCameraFloat = useStore((s) => s.openCameraFloat)
   const sendCommand = useStore((s) => s.sendCommand)
+  const openEvent = useStore((s) => s.openEvent)
   const [popover, setPopover] = useState<string | null>(null)
   const [wander, setWander] = useState<Record<string, { x: number; y: number }>>({})
   // 区分设备图标的单击（打开控制）与双击（摄像头打开浮窗）
@@ -164,16 +166,19 @@ export function LiveMap() {
   const petRoomIds = new Set(pets.map((p) => p.roomId))
   // 昼夜光照氛围：随本地时间变化（清晨/白天/傍晚/夜间）
   const amb = ambianceFor(new Date().getHours())
-  // 历史轨迹：按 room_change 事件顺序（时间升序）取房间质心
-  const historyPts =
+  // 历史轨迹：仅当前宠物的 room_change 事件（时间升序），保留事件以便点击查看
+  const historyNodes =
     mapMode === 'history'
-      ? [...events]
+      ? eventsForPet(events, activePetId, pets[0]?.id)
           .filter((e) => e.type === 'room_change')
           .sort((a, b) => a.timestamp - b.timestamp)
-          .map((e) => rooms.find((r) => r.id === (e.toRoomId ?? e.roomId)))
-          .filter((r): r is NonNullable<typeof r> => !!r)
-          .map(roomCentroid)
+          .map((e) => {
+            const r = rooms.find((rm) => rm.id === (e.toRoomId ?? e.roomId))
+            return r ? { pt: roomCentroid(r), e, roomName: r.name } : null
+          })
+          .filter((n): n is NonNullable<typeof n> => !!n)
       : []
+  const historyPts = historyNodes.map((n) => n.pt)
 
   return (
     <div className="relative mx-auto aspect-[5/3] max-h-full w-full overflow-hidden rounded-[28px] border border-line bg-[#fafcf9] shadow-soft">
@@ -194,20 +199,6 @@ export function LiveMap() {
               <stop offset="100%" stopColor={amb.glow} stopOpacity={0} />
             </radialGradient>
           </defs>
-          {/* 历史轨迹 */}
-          {historyPts.length > 1 && (
-            <>
-              <polyline className="history-route" points={poly(historyPts)} />
-              {historyPts.map((p, i) => (
-                <g key={i}>
-                  <circle cx={p.x} cy={p.y} r={17} fill="#fff" stroke="#c5793f" strokeWidth={5} />
-                  <text x={p.x} y={p.y + 1} fontSize={17} fontWeight={900} fill="#a65e2f" textAnchor="middle" dominantBaseline="central">
-                    {i + 1}
-                  </text>
-                </g>
-              ))}
-            </>
-          )}
           {/* 房间：地板色 + 墙体 + 门洞 + 家具 */}
           {rooms.map((r) => {
             const b = roomBounds(r)
@@ -333,6 +324,23 @@ export function LiveMap() {
               />
             )
           })}
+          {/* 历史轨迹：画在房间/家具之上，节点可点击查看事件；与实时(teal)不同用暖橙色 */}
+          {historyPts.length > 1 && (
+            <>
+              <polyline className="history-route" points={poly(historyPts)} />
+              {historyNodes.map((n, i) => {
+                const last = i === historyNodes.length - 1
+                return (
+                  <g key={n.e.id} data-testid="history-node" style={{ cursor: 'pointer' }} onClick={() => openEvent(n.e)}>
+                    <title>{`${timeHM(n.e.timestamp)} · ${n.roomName} · ${n.e.title}${n.e.source?.length ? ' · ' + n.e.source.join('+') : ''}`}</title>
+                    <circle cx={n.pt.x} cy={n.pt.y} r={last ? 20 : 17} fill="#fff" stroke={last ? '#a65e2f' : '#c5793f'} strokeWidth={last ? 6 : 5} />
+                    <text x={n.pt.x} y={n.pt.y + 1} fontSize={17} fontWeight={900} fill="#a65e2f" textAnchor="middle" dominantBaseline="central">{i + 1}</text>
+                    {n.e.media && <circle cx={n.pt.x + 14} cy={n.pt.y - 12} r={5} fill="#2e7f75" stroke="#fff" strokeWidth={2} />}
+                  </g>
+                )
+              })}
+            </>
+          )}
           {/* 过渡路径 + 脚印（沿真实门口折线，画在家具之上） */}
           {transition && transition.path.length > 1 && (
             <>
@@ -349,8 +357,8 @@ export function LiveMap() {
           )}
         </svg>
 
-        {/* Avatar 覆盖层：每只宠物一个（同房间自动错位），点击选中并打开详情 */}
-        {pets.map((p) => {
+        {/* Avatar 覆盖层：每只宠物一个（同房间自动错位），点击选中并打开详情。历史模式不展示实时 Avatar，避免被当作历史位置 */}
+        {mapMode !== 'history' && pets.map((p) => {
           const r = rooms.find((rm) => rm.id === p.roomId)
           const base = r ? roomCentroid(r) : { x: MAP_W / 2, y: MAP_H / 2 }
           // 同房间内的宠物按序号横向错开
@@ -450,17 +458,14 @@ export function LiveMap() {
           const speaker = roomDevs.find((d) => d.type === 'speaker')
           const feeder = devices.find((d) => d.type === 'feeder')
           const actions: { label: string; onClick: () => void }[] = [
-            { label: '👁 看看它', onClick: () => openCameraFloat() },
+            { label: '👁 看视频', onClick: () => openCameraFloat() },
             { label: '🔊 叫它', onClick: () => sendCommand(speaker?.id ?? p.id, `呼叫${p.name}`) },
-            { label: '🎙 主人声音', onClick: () => sendCommand(speaker?.id ?? p.id, '播放主人声音') },
-            { label: '🎬 视频互动', onClick: () => openCameraFloat(undefined, true) },
-            { label: '🍽 投喂', onClick: () => sendCommand(feeder?.id ?? p.id, '远程投喂 8g') },
-            { label: '✦ 逗宠', onClick: () => sendCommand(p.id, '启动逗宠模组') },
+            { label: '🍽 投喂', onClick: () => setDeviceControlTarget({ deviceId: feeder?.id ?? '' }) },
           ]
           return (
             <div
               data-testid="avatar-popover"
-              className="animate-fade absolute z-[12] w-[260px] rounded-2xl border border-[#dce6e1] bg-white/97 p-3.5 shadow-soft backdrop-blur"
+              className="animate-fade absolute z-[12] w-[220px] rounded-2xl border border-[#dce6e1] bg-white/97 p-3 shadow-soft backdrop-blur"
               style={{
                 left: `${leftPct}%`,
                 top: placeBelow ? `calc(${topPct}% + 42px)` : `calc(${topPct}% - 42px)`,
@@ -469,30 +474,13 @@ export function LiveMap() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <b className="text-base">{p.name}</b>
-                  <div className="mt-0.5 text-xs text-muted">{r?.name} · {behaviorLabel[p.behavior]} · {relativeTime(p.lastUpdatedAt)}</div>
+                  <b className="text-sm">{p.name}</b>
+                  <div className="mt-0.5 text-[12px] text-muted">{r?.name} · {behaviorLabel[p.behavior]} · {relativeTime(p.lastUpdatedAt)}</div>
                 </div>
                 <button className="grid h-6 w-6 place-items-center rounded-lg bg-[#eef3f0] text-[#6e7f79]" onClick={() => setPopover(null)} aria-label="关闭">×</button>
               </div>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-teal">
-                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: behaviorColor[p.behavior] }} />
-                定位置信度 {Math.round(p.confidence * 100)}% · {p.trackingSources.includes('camera') ? '视觉 + BLE' : 'BLE / IMU'}
-              </div>
-              {/* 实时小画面缩略 */}
-              <button
-                className="relative mt-2 flex h-[86px] w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]"
-                onClick={() => openCameraFloat()}
-                aria-label="查看实时画面"
-              >
-                <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[11px] font-bold text-white">
-                  演示画面 · {p.trackingSources.includes('camera') ? r?.name : '最近摄像头'}
-                </span>
-                <span className={behaviorAnim[p.behavior] ?? ''}>
-                  <PetSvg behavior={p.behavior} size={56} />
-                </span>
-                <span className="absolute bottom-1.5 right-2 text-[11px] text-[#3f514b]">点击看大图 ›</span>
-              </button>
-              <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+              <div className="mt-1.5 text-[11px] text-muted">详细视频 / 定位已在右侧面板展开</div>
+              <div className="mt-2 grid grid-cols-3 gap-1.5">
                 {actions.map((a) => (
                   <button key={a.label} className="rounded-xl border border-line bg-white px-1 py-2 text-[11px] font-bold text-[#53645e] hover:border-[#cde3dc] hover:bg-teal-soft hover:text-teal" onClick={a.onClick}>
                     {a.label}

@@ -4,7 +4,7 @@ import { useStore, currentRoom, deviceById } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, roomDevices, roomHasDevice } from '@/lib/tracking'
 import { relativeTime } from '@/lib/time'
-import { eventsForPet, filterByRange, roomShare } from '@/lib/diary'
+import { eventsForPet, filterByRange, roomStay } from '@/lib/diary'
 import { cameraView, locateState } from '@/lib/status'
 
 /** 地图右侧固定信息面板（实时/历史/设备三模式内容不同）。替代原右上角覆盖式浮层。 */
@@ -54,23 +54,23 @@ export function MapSidePanel() {
   const feeder = devices.find((d) => d.type === 'feeder')
 
   if (mapMode === 'history') {
-    const shares = roomShare(petEvents, home)
+    const shares = roomStay(petEvents, home, Date.now())
     return (
       <Panel title="今日停留热点" badge="历史">
         {shares.length ? (
           <div className="flex flex-col gap-2.5">
             {shares.map((s) => (
-              <div key={s.roomName} className="grid grid-cols-[52px_1fr_36px] items-center gap-2 text-xs">
+              <div key={s.roomName} className="grid grid-cols-[52px_1fr_64px] items-center gap-2 text-xs">
                 <span className="text-muted">{s.roomName}</span>
                 <span className="h-2 overflow-hidden rounded-full bg-[#edf2ef]"><i className="block h-full rounded-full bg-gradient-to-r from-orange to-[#e0a878]" style={{ width: `${s.pct}%` }} /></span>
-                <b className="text-right">{s.pct}%</b>
+                <b className="text-right">{s.pct}% · {s.minutes}分</b>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-xs text-muted">今日暂无跨房间记录。</div>
         )}
-        <div className="mt-3 text-[11px] leading-relaxed text-muted">地图上按时间顺序绘制了当日跨房间轨迹与停留节点。</div>
+        <div className="mt-3 text-[11px] leading-relaxed text-muted">按今日跨房间时间线推导停留时长；点击地图上的编号节点可查看该次迁移事件与影像。</div>
       </Panel>
     )
   }

@@ -233,6 +233,25 @@ test('历史模式绘制轨迹', async ({ page }) => {
   await expect(page.getByText('今日停留热点')).toBeVisible()
 })
 
+test('历史节点可点击查看事件 + 实时模式不显示历史 Avatar', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('map-mode-history').click()
+  // 历史模式不展示实时 Avatar
+  await expect(page.getByTestId('pet-avatar')).toHaveCount(0)
+  // 点击轨迹节点打开对应事件
+  await page.getByTestId('history-node').first().click({ force: true })
+  await expect(page.getByTestId('event-modal')).toBeVisible()
+})
+
+test('点击另一只宠物 Avatar 切换右侧面板', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await expect(page.getByTestId('tracking-room')).toHaveText('客厅')
+  await page.getByTestId('pet-avatar-other').first().click({ force: true })
+  await expect(page.getByTestId('tracking-room')).toHaveText('卧室')
+})
+
 test('情绪陪伴：开启后可触发温和提醒，非诊断', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('demo-mode-toggle').click() // 情绪偏低模拟按钮属演示能力
@@ -258,7 +277,7 @@ test('点击 Avatar 弹出快捷互动气泡（核心交互）', async ({ page }
   await page.getByTestId('nav-map').click()
   await page.getByTestId('pet-avatar').click({ force: true })
   await expect(page.getByTestId('avatar-popover')).toBeVisible()
-  await expect(page.getByTestId('avatar-popover')).toContainText('看看它')
+  await expect(page.getByTestId('avatar-popover')).toContainText('看视频')
 })
 
 test('户型编辑器可布置家具（添加后可删除）', async ({ page }) => {
@@ -298,7 +317,7 @@ test('宠物气泡“看看它”复用同一摄像头浮窗（看最近摄像�
   await page.getByTestId('nav-map').click()
   await page.getByTestId('pet-avatar').click({ force: true })
   await expect(page.getByTestId('avatar-popover')).toBeVisible()
-  await page.getByTestId('avatar-popover').getByRole('button', { name: /看看它/ }).click()
+  await page.getByTestId('avatar-popover').getByRole('button', { name: /看视频/ }).click()
   await expect(page.getByTestId('camera-float')).toBeVisible()
   await expect(page.getByTestId('camera-float')).toHaveCount(1)
 })
