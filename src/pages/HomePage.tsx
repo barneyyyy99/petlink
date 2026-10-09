@@ -1,7 +1,7 @@
 import { useStore, currentRoom } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
 import { behaviorLabel, behaviorMeta } from '@/lib/tracking'
-import { summarizeDay, buildDiary, eventsForPet } from '@/lib/diary'
+import { summarizeDay, buildDiary, eventsForPet, filterByRange } from '@/lib/diary'
 import { Icon, type IconName } from '@/components/Icon'
 
 export function HomePage() {
@@ -27,8 +27,10 @@ export function HomePage() {
   const tempHigh = env && tempRule && env.temperature >= (tempRule.threshold ?? 29)
   // 仅统计当前宠物的事件：首页所有卡片都围绕被选中的宠物
   const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
-  const sum = summarizeDay(petEvents, home)
-  const recent = petEvents.slice(0, 3)
+  // 首页围绕“今天”：状态分 / 事件 / 日记只统计今日
+  const todayEvents = filterByRange(petEvents, 'today', Date.now())
+  const sum = summarizeDay(todayEvents, home)
+  const recent = [...todayEvents].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3)
   // AI 日记：由该宠物当日真实事件生成（可换一条）
   const diary = buildDiary(sum, moodSignal, diarySeed)
   // 状态分：由当日真实事件推导（透明可解释），而非写死

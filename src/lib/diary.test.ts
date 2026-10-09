@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration } from './diary'
+import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration, filterByRange } from './diary'
 import type { HomeMap, PetEvent } from '@/domain/types'
 
 const home = {
@@ -84,5 +84,25 @@ describe('activityDigest / fmtDuration', () => {
     expect(fmtDuration(45)).toBe('约 45 分钟')
     expect(fmtDuration(60)).toBe('约 1 小时')
     expect(fmtDuration(135)).toBe('约 2 小时 15 分')
+  })
+})
+
+describe('filterByRange', () => {
+  const now = new Date(2026, 9, 9, 15, 0, 0).getTime() // 2026-10-09 15:00
+  const mk = (daysAgo: number): PetEvent =>
+    ({ id: Math.random().toString(36), timestamp: now - daysAgo * 86400000, type: 'play', title: '', detail: '' } as PetEvent)
+
+  it('今天只含当天事件', () => {
+    const evs = [mk(0), mk(2), mk(20)]
+    expect(filterByRange(evs, 'today', now)).toHaveLength(1)
+  })
+  it('近7天含今天与数天前，排除更久', () => {
+    const evs = [mk(0), mk(2), mk(5), mk(20)]
+    expect(filterByRange(evs, '7d', now)).toHaveLength(3)
+  })
+  it('本月含当月内事件', () => {
+    const evs = [mk(0), mk(2), mk(5), mk(20), mk(40)]
+    // now=10/9：0→10/9,2→10/7,5→10/4 属本月(3)；20→9/19,40→8/30 不属本月
+    expect(filterByRange(evs, 'month', now)).toHaveLength(3)
   })
 })

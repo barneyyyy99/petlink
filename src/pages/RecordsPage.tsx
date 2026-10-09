@@ -1,5 +1,12 @@
+import { useState } from 'react'
 import { useStore } from '@/store/useStore'
-import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration } from '@/lib/diary'
+import { summarizeDay, buildDiary, eventsForPet, activityDigest, fmtDuration, filterByRange, type TimeRange } from '@/lib/diary'
+
+const RANGES: { key: TimeRange; label: string }[] = [
+  { key: 'today', label: '今天' },
+  { key: '7d', label: '近 7 天' },
+  { key: 'month', label: '本月' },
+]
 
 export function RecordsPage() {
   const openModal = useStore((s) => s.openModal)
@@ -16,11 +23,29 @@ export function RecordsPage() {
   const regenerateDiary = useStore((s) => s.regenerateDiary)
   const openCamera = useStore((s) => s.openCamera)
   const toast = useStore((s) => s.toast)
+  const [range, setRange] = useState<TimeRange>('today')
 
+  const now = Date.now()
   const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
-  const sum = summarizeDay(petEvents, home)
-  const diary = buildDiary(sum, moodSignal, diarySeed)
-  const digest = activityDigest(petEvents, Date.now())
+  // 统计/图表按所选时间范围；日记固定取“今天”
+  const ranged = filterByRange(petEvents, range, now)
+  const rangeLabel = RANGES.find((r) => r.key === range)!.label
+  const sum = summarizeDay(ranged, home)
+  // 时长估算：今天统计到当前时刻；更长区间统计到最后一次事件，避免把空档全算成休息
+  const lastTs = ranged.reduce((m, e) => Math.max(m, e.timestamp), 0)
+  const digest = activityDigest(ranged, range === 'today' ? now : lastTs || now)
+  const todayEvents = filterByRange(petEvents, 'today', now)
+  const todaySum = summarizeDay(todayEvents, home)
+  const todayDigest = activityDigest(todayEvents, now)
+  const diary = buildDiary(todaySum, moodSignal, diarySeed)
+  const freq = [
+    { l: '进食', v: sum.eats },
+    { l: '饮水', v: sum.drinks },
+    { l: '玩耍', v: sum.plays },
+    { l: '跨房间', v: sum.roomChanges },
+    { l: '远程陪伴', v: sum.ownerInteractions },
+  ]
+  const freqMax = Math.max(1, ...freq.map((f) => f.v))
 
   return (
     <div>
@@ -29,6 +54,18 @@ export function RecordsPage() {
           <div className="eyebrow">DAILY MEMORY</div>
           <h2 className="my-1 text-3xl font-extrabold">记录</h2>
           <div className="text-sm text-muted">轨迹、行为、声音与陪伴事件汇总在这里。</div>
+        </div>
+        <div className="flex rounded-2xl bg-[#e4ebe7] p-1" data-testid="records-range">
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              data-testid={`range-${r.key}`}
+              onClick={() => setRange(r.key)}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${range === r.key ? 'bg-white text-teal shadow-softsm' : 'text-[#6f817b]'}`}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -40,18 +77,32 @@ export function RecordsPage() {
 
       <div className="mt-5 grid grid-cols-[1.1fr_.9fr] gap-5 max-[900px]:grid-cols-1">
         <div className="card">
-          <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">今日行为构成</h3><span className="badge">客观数据</span></div>
-          <p className="mb-3 text-[11px] text-muted">以下为来自事件流的客观统计（非 AI 文案）。</p>
-          {[
-            { l: '跨房间', v: sum.roomChanges, w: Math.min(100, sum.roomChanges * 20) },
-            { l: '进食', v: sum.eats, w: Math.min(100, sum.eats * 30) },
-            { l: '喝水', v: sum.drinks, w: Math.min(100, sum.drinks * 30) },
-            { l: '玩耍', v: sum.plays, w: Math.min(100, sum.plays * 30) },
-            { l: '远程陪伴', v: sum.ownerInteractions, w: Math.min(100, sum.ownerInteractions * 30) },
-          ].map((b) => (
-            <div key={b.l} className="mb-3 grid grid-cols-[70px_1fr_52px] items-center gap-2.5 text-xs">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-lg font-bold">行为统计 · {rangeLabel}</h3>
+            <span className="badge" data-testid="records-count">{ranged.length} 条事件</span>
+          </div>
+
+          {/* 行为时间分布（时长，仅“今天”有意义；更长区间只给日均提示） */}
+          <div className="mb-1 text-xs font-bold text-[#4c5f59]">行为时间分布（估算）</div>
+          {range === 'today' ? (
+            <>
+              <p className="mb-2 text-[10px] text-muted">由今日事件时间线推导，单位为时长。</p>
+              <div className="mb-4 grid grid-cols-2 gap-2 text-center">
+                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.activeMinutes)}</b><span className="text-[10px] text-muted">活动时长</span></div>
+                <div className="rounded-xl bg-[#f2f7f4] py-2.5"><b className="block text-base">{fmtDuration(digest.restMinutes)}</b><span className="text-[10px] text-muted">休息时长</span></div>
+              </div>
+            </>
+          ) : (
+            <p className="mb-4 rounded-xl bg-[#f2f7f4] px-3 py-2.5 text-[10px] leading-relaxed text-muted">时长分布按单日推导，{rangeLabel}请切换到“今天”查看；下方为该区间的事件频次统计。</p>
+          )}
+
+          {/* 事件频次（次数） */}
+          <div className="mb-1 text-xs font-bold text-[#4c5f59]">事件频次（{rangeLabel}）</div>
+          <p className="mb-2 text-[10px] text-muted">来自事件流的客观计数（非 AI 文案），单位：次。</p>
+          {freq.map((b) => (
+            <div key={b.l} className="mb-2.5 grid grid-cols-[70px_1fr_52px] items-center gap-2.5 text-xs">
               <span>{b.l}</span>
-              <span className="h-2.5 overflow-hidden rounded-full bg-[#edf2ef]"><i className="block h-full rounded-full bg-gradient-to-r from-teal-2 to-[#7db7aa]" style={{ width: `${b.w}%` }} /></span>
+              <span className="h-2.5 overflow-hidden rounded-full bg-[#edf2ef]"><i className="block h-full rounded-full bg-gradient-to-r from-teal-2 to-[#7db7aa]" style={{ width: `${(b.v / freqMax) * 100}%` }} /></span>
               <b>{b.v} 次</b>
             </div>
           ))}
@@ -72,12 +123,12 @@ export function RecordsPage() {
               <span className="text-[9px] text-muted">由今日事件时间线推导</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <Fact v={`${digest.eats + digest.drinks} 次`} s="进食 / 饮水" />
-              <Fact v={fmtDuration(digest.activeMinutes)} s="活动时长" />
-              <Fact v={fmtDuration(digest.restMinutes)} s="休息时长" />
-              <Fact v={`${digest.plays} 次`} s="玩耍" />
-              <Fact v={`${digest.roomChanges} 趟`} s="跨房间" />
-              <Fact v={`${digest.owner} 次`} s="远程陪伴" />
+              <Fact v={`${todayDigest.eats + todayDigest.drinks} 次`} s="进食 / 饮水" />
+              <Fact v={fmtDuration(todayDigest.activeMinutes)} s="活动时长" />
+              <Fact v={fmtDuration(todayDigest.restMinutes)} s="休息时长" />
+              <Fact v={`${todayDigest.plays} 次`} s="玩耍" />
+              <Fact v={`${todayDigest.roomChanges} 趟`} s="跨房间" />
+              <Fact v={`${todayDigest.owner} 次`} s="远程陪伴" />
             </div>
           </div>
 
@@ -114,12 +165,32 @@ export function RecordsPage() {
       </div>
 
       <div className="card mt-5">
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">关键事件</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>在踪迹栏查看</button></div>
-        <div className="grid grid-cols-3 gap-3.5 max-[640px]:grid-cols-1">
-          {petEvents.slice(0, 3).map((e) => (
-            <div key={e.id} className="rounded-2xl border border-line bg-white p-4"><span className="badge">{new Date(e.timestamp).toTimeString().slice(0, 5)}</span><h4 className="my-2 text-base font-bold">{e.title}</h4><p className="m-0 text-xs text-muted">{e.detail}</p></div>
-          ))}
-        </div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">关键事件 · {rangeLabel}</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>在踪迹栏查看</button></div>
+        {ranged.length ? (
+          <div className="grid grid-cols-3 gap-3.5 max-[640px]:grid-cols-1">
+            {ranged.slice(0, 6).map((e) => {
+              const roomName = home.rooms.find((r) => r.id === (e.toRoomId ?? e.roomId))?.name
+              return (
+                <div key={e.id} data-testid="record-item" className="rounded-2xl border border-line bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="badge">{new Date(e.timestamp).toTimeString().slice(0, 5)}</span>
+                    {roomName && <span className="text-[10px] text-muted">{roomName}</span>}
+                  </div>
+                  <h4 className="my-2 text-base font-bold">{e.title}</h4>
+                  <p className="m-0 text-xs text-muted">{e.detail}</p>
+                  {(e.source?.length || e.media) && (
+                    <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8aa39b]">
+                      {e.source?.length ? <span>来源：{e.source.join(' + ')}</span> : null}
+                      {e.media ? <span className="rounded bg-[#eef3ef] px-1.5 py-0.5">{e.media.type === 'video' ? '▶ 视频' : '📷 图片'}</span> : null}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-[#d6e1db] bg-[#f7faf8] p-6 text-center text-xs text-muted">{rangeLabel}内{pet.name}暂无事件记录。</div>
+        )}
       </div>
     </div>
   )

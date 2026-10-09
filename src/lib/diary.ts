@@ -50,6 +50,18 @@ export function eventsForPet(events: PetEvent[], petId: string, primaryPetId?: s
   return events.filter((e) => (e.petId ?? primaryPetId) === petId)
 }
 
+export type TimeRange = 'today' | '7d' | 'month'
+
+/** 按时间范围筛选事件（今天 / 近 7 天 / 本月） */
+export function filterByRange(events: PetEvent[], range: TimeRange, now: number): PetEvent[] {
+  const d = new Date(now)
+  let cutoff: number
+  if (range === 'today') cutoff = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  else if (range === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000
+  else cutoff = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+  return events.filter((e) => e.timestamp >= cutoff && e.timestamp <= now)
+}
+
 export type ActivityDigest = {
   eats: number
   drinks: number

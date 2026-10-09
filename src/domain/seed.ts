@@ -10,7 +10,7 @@ import type {
 import { makeId, rectPoints } from './geometry'
 import { defaultFurniture } from '@/components/map/furnitureLib'
 
-export const SCHEMA_VERSION = 6
+export const SCHEMA_VERSION = 7
 
 function room(
   id: string,
@@ -200,6 +200,10 @@ export function seedEvents(): PetEvent[] {
     }),
     ev(150, 'play', '玩耍', '卧室摄像头识别到团子追逐玩具 6 分钟', { roomId: 'room_bedroom', petId: 'pet_tuanzi', media: { type: 'video' } }),
     ev(80, 'drink', '喝水', '饮水器检测到团子饮水 20 秒', { roomId: 'room_bedroom', petId: 'pet_tuanzi' }),
+    // 往期事件（用于演示“今天 / 近7天 / 本月”时间筛选产生不同结果）
+    ev(2 * 24 * 60, 'play', '玩耍', '2 天前客厅玩耍 9 分钟', { roomId: 'room_living', media: { type: 'video' } }),
+    ev(5 * 24 * 60, 'eat', '完成进食', '5 天前喂食器记录 16g', { roomId: 'room_dining', deviceId: 'dev_feeder_dining' }),
+    ev(20 * 24 * 60, 'room_change', '客厅 → 书房', '20 天前的跨房间记录', { fromRoomId: 'room_living', toRoomId: 'room_study', roomId: 'room_study', source: ['ble'] }),
   ]
 }
 

@@ -55,6 +55,21 @@ test('地图设备模式显示设备状态（与实时模式内容不同）', as
   await expect(page.getByTestId('live-map-svg')).toContainText('余粮')
 })
 
+test('记录页时间筛选（今天/近7天/本月）真实改变数据', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-records').click()
+  const count = page.getByTestId('records-count')
+  await expect(count).toBeVisible()
+  const read = async () => Number((await count.innerText()).replace(/\D/g, ''))
+  const today = await read()
+  await page.getByTestId('range-7d').click()
+  const d7 = await read()
+  await page.getByTestId('range-month').click()
+  const month = await read()
+  expect(d7).toBeGreaterThan(today)
+  expect(month).toBeGreaterThanOrEqual(d7)
+})
+
 test('首页显示守护对象并可切换宠物', async ({ page }) => {
   await gotoFresh(page)
   await expect(page.getByText('今日守护对象')).toBeVisible()
