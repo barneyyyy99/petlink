@@ -6,9 +6,29 @@ async function gotoFresh(page: Page) {
   await expect(page.getByTestId('nav-home')).toBeVisible()
 }
 
+test('演示功能默认隐藏，开启演示模式后出现并有标识', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  await expect(page.getByTestId('sim-next-room')).toHaveCount(0)
+  await expect(page.getByTestId('demo-mode-badge')).toHaveCount(0)
+  await page.getByTestId('demo-mode-toggle').click()
+  await expect(page.getByTestId('demo-mode-badge')).toBeVisible()
+  await expect(page.getByTestId('sim-next-room')).toBeVisible()
+  await expect(page.getByTestId('demo-panel')).toBeVisible()
+})
+
+test('摄像头预览标注“演示画面”而非 LIVE', async ({ page }) => {
+  await gotoFresh(page)
+  await page.getByTestId('nav-map').click()
+  const preview = page.getByTestId('side-camera-preview')
+  await expect(preview).toBeVisible()
+  await expect(preview).toContainText('演示画面')
+  await expect(preview).not.toContainText('LIVE')
+})
+
 test('寻宠卡片按资料生成并可上传照片', async ({ page }) => {
   await gotoFresh(page)
-  await page.getByTestId('demo-btn').click()
+  await page.getByTestId("demo-mode-toggle").click()
   await page.getByTestId('demo-panel').waitFor()
   await page.getByRole('button', { name: '围栏告警' }).click()
   await expect(page.getByTestId('lost-modal')).toBeVisible()
@@ -146,6 +166,7 @@ test('编辑已有房间加顶点 + 新增房间 + 应用 + 刷新持久化', as
 test('模拟跨房间：位置更新 + 接力 + 追踪卡变化', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
+  await page.getByTestId('demo-mode-toggle').click() // 开启演示模式以显示模拟按钮
   await expect(page.getByTestId('tracking-room')).toHaveText('客厅')
   await page.getByTestId('sim-next-room').click()
   // 位置应变化（不再是客厅）
@@ -155,12 +176,12 @@ test('模拟跨房间：位置更新 + 接力 + 追踪卡变化', async ({ page 
 test('环境联动：高温出现建议卡并可确认开空调', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
-  await page.getByTestId('demo-btn').click()
+  await page.getByTestId("demo-mode-toggle").click()
   await expect(page.getByTestId('demo-panel')).toBeVisible()
   // 当前房间(客厅)设为高温
   await page.getByRole('button', { name: '高温' }).click()
   // 关闭演示面板，避免遮挡建议卡按钮
-  await page.getByTestId('demo-btn').click()
+  await page.getByTestId("demo-mode-toggle").click()
   await expect(page.getByTestId('demo-panel')).toBeHidden()
   await expect(page.getByTestId('suggestion-card')).toBeVisible()
   await page.getByTestId('suggestion-card').getByRole('button', { name: '开启空调' }).click()
@@ -214,6 +235,7 @@ test('历史模式绘制轨迹', async ({ page }) => {
 
 test('情绪陪伴：开启后可触发温和提醒，非诊断', async ({ page }) => {
   await gotoFresh(page)
+  await page.getByTestId('demo-mode-toggle').click() // 情绪偏低模拟按钮属演示能力
   await page.getByTestId('nav-records').click()
   await page.getByTestId('companion-toggle').click()
   await page.getByTestId('low-mood-btn').click()

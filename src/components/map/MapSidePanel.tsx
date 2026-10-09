@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useStore, currentRoom, deviceById } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
-import { behaviorLabel, roomDevices } from '@/lib/tracking'
+import { behaviorLabel, roomDevices, roomHasDevice } from '@/lib/tracking'
 import { relativeTime } from '@/lib/time'
 import { eventsForPet, filterByRange, roomShare } from '@/lib/diary'
+import { cameraView, locateState } from '@/lib/status'
 
 /** 地图右侧固定信息面板（实时/历史/设备三模式内容不同）。替代原右上角覆盖式浮层。 */
 export function MapSidePanel() {
@@ -23,6 +24,7 @@ export function MapSidePanel() {
   const home = useStore((s) => s.homeMap)
   const refreshTracking = useStore((s) => s.refreshTracking)
   const simulateNextRoom = useStore((s) => s.simulateNextRoom)
+  const demoMode = useStore((s) => s.demoMode)
   const openCameraFloat = useStore((s) => s.openCameraFloat)
   const sendCommand = useStore((s) => s.sendCommand)
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
@@ -35,6 +37,9 @@ export function MapSidePanel() {
   }, [])
 
   const srcLabel = pet.trackingSources.includes('camera') ? '视觉 + BLE' : pet.trackingSources.includes('imu') ? 'BLE + IMU' : 'BLE'
+  const hasCamInRoom = !!room && roomHasDevice(devices, room.id, 'camera')
+  const view = cameraView(pet, cam, handoff)
+  const locate = locateState(pet, handoff, hasCamInRoom)
   const chain =
     handoff.phase !== 'idle'
       ? handoff.message
@@ -112,20 +117,31 @@ export function MapSidePanel() {
         <div className="text-right text-[11px] text-muted">{behaviorLabel[pet.behavior]}<br />{relativeTime(pet.lastUpdatedAt)}</div>
       </div>
 
-      {/* 实时摄像头预览（点击放大） */}
+      {/* 摄像头预览（点击放大）；当前无真实视频源，标注“演示画面”，连接中/离线/无画面不展示伪画面 */}
       <button
         className="relative mt-3 flex h-[120px] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]"
         data-testid="side-camera-preview"
         onClick={() => openCameraFloat()}
-        aria-label="查看实时画面"
+        aria-label="查看画面"
       >
-        <span className="absolute left-2.5 top-2.5 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[11px] font-bold text-white">● LIVE · {cam ? camRoom?.name : '最近摄像头'}</span>
-        <PetSvg behavior={pet.behavior} size={72} />
-        <span className="absolute bottom-2 right-2.5 text-[11px] text-[#3f514b]">点击放大 ›</span>
+        <span className="absolute left-2.5 top-2.5 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[11px] font-bold text-white">
+          {view.badge}{view.showScene ? ` · ${camRoom?.name ?? ''}` : ''}
+        </span>
+        {view.showScene ? (
+          <PetSvg behavior={pet.behavior} size={72} />
+        ) : (
+          <span className="px-4 text-center text-xs font-bold text-[#3f514b]">
+            {view.kind === 'connecting' ? '画面连接中…' : view.kind === 'offline' ? '摄像头离线' : '当前房间无摄像头 · 辅助定位中'}
+          </span>
+        )}
+        <span className="absolute bottom-2 right-2.5 text-[11px] text-[#3f514b]">{view.showScene ? '点击放大 ›' : '查看其他摄像头 ›'}</span>
       </button>
+      {view.showScene && !view.detected && (
+        <div className="mt-1 text-[11px] text-[#a9731f]">当前画面未检测到{pet.name}，展示最近摄像头的示例画面</div>
+      )}
 
       <div className="mt-3 grid grid-cols-3 gap-1.5">
-        <Cell b={`${Math.round(pet.confidence * 100)}%`} s="定位置信度" />
+        <Cell b={locate.label} s="定位状态" />
         <Cell b={cam?.name ?? '无摄像头'} s="当前画面" />
         <Cell b={srcLabel} s="定位来源" />
       </div>
@@ -149,7 +165,7 @@ export function MapSidePanel() {
 
       <div className="mt-2.5 flex gap-1.5">
         <button className="btn flex-1" onClick={refreshTracking}>刷新定位</button>
-        <button data-testid="sim-next-room" className="btn btn-primary flex-1" onClick={simulateNextRoom}>模拟跨房间</button>
+        {demoMode && <button data-testid="sim-next-room" className="btn btn-primary flex-1" onClick={simulateNextRoom}>模拟跨房间</button>}
       </div>
     </Panel>
   )

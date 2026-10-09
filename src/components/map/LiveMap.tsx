@@ -485,7 +485,7 @@ export function LiveMap() {
                 aria-label="查看实时画面"
               >
                 <span className="absolute left-2 top-2 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-0.5 text-[11px] font-bold text-white">
-                  ● LIVE · {p.trackingSources.includes('camera') ? r?.name : '最近摄像头'}
+                  演示画面 · {p.trackingSources.includes('camera') ? r?.name : '最近摄像头'}
                 </span>
                 <span className={behaviorAnim[p.behavior] ?? ''}>
                   <PetSvg behavior={p.behavior} size={56} />

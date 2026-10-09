@@ -23,6 +23,7 @@ export function RecordsPage() {
   const regenerateDiary = useStore((s) => s.regenerateDiary)
   const openCamera = useStore((s) => s.openCamera)
   const toast = useStore((s) => s.toast)
+  const demoMode = useStore((s) => s.demoMode)
   const [range, setRange] = useState<TimeRange>('today')
 
   const now = Date.now()
@@ -158,7 +159,7 @@ export function RecordsPage() {
           </div>
           <div className="mt-2.5 flex gap-2">
             <button className="btn btn-primary" onClick={regenerateDiary}>换一条 AI 日记</button>
-            <button data-testid="low-mood-btn" className="btn" disabled={!companionEnabled} onClick={triggerLowMood}>模拟主人情绪偏低</button>
+            {demoMode && <button data-testid="low-mood-btn" className="btn" disabled={!companionEnabled} onClick={triggerLowMood}>模拟情绪偏低</button>}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-[#96a39f]">此处展示“陪伴线索”而非诊断或心理结论；提醒可关闭，并由用户主动授权。</p>
         </div>

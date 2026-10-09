@@ -8,7 +8,7 @@ import { RecordsPage } from '@/pages/RecordsPage'
 import { MePage } from '@/pages/MePage'
 import { Toaster } from '@/components/Toaster'
 import { TrailDrawer } from '@/components/TrailDrawer'
-import { DemoPanel, DEMO_ENABLED } from '@/components/DemoPanel'
+import { DemoPanel } from '@/components/DemoPanel'
 import { PwaManager } from '@/components/PwaManager'
 import { AvatarPanel } from '@/modals/AvatarPanel'
 import { CameraModal } from '@/modals/CameraModal'
@@ -35,7 +35,8 @@ const NAV: { key: PageKey; icon: IconName; label: string }[] = [
 export default function App() {
   const page = useStore((s) => s.page)
   const goPage = useStore((s) => s.goPage)
-  const toggleDemo = useStore((s) => s.toggleDemo)
+  const demoMode = useStore((s) => s.demoMode)
+  const setDemoMode = useStore((s) => s.setDemoMode)
   const openModal = useStore((s) => s.openModal)
   const toast = useStore((s) => s.toast)
   const authUser = useAuth((s) => s.user)
@@ -73,11 +74,14 @@ export default function App() {
           ))}
         </nav>
         <div className="flex-1 max-[1000px]:hidden" />
-        {DEMO_ENABLED && (
-          <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773] max-[1000px]:hidden" data-testid="demo-btn" title="演示控制" onClick={() => toggleDemo()}>
-            <Icon name="settings" size={18} />
-          </button>
-        )}
+        <button
+          className={`grid h-10 w-10 place-items-center rounded-xl border text-[#667773] max-[1000px]:hidden ${demoMode ? 'border-[#e0a53c] bg-[#fff3e0] text-[#a9731f]' : 'border-line bg-white/90'}`}
+          data-testid="demo-mode-toggle"
+          title={demoMode ? '演示模式已开启（点击退出）' : '开启演示模式'}
+          onClick={() => setDemoMode(!demoMode)}
+        >
+          <Icon name="settings" size={18} />
+        </button>
       </aside>
 
       {/* 主区域 */}
@@ -86,6 +90,9 @@ export default function App() {
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-teal text-white">🐾</div>
             <div><b className="text-lg">petlink</b><div className="text-xs text-muted">小度全屋宠物陪伴</div></div>
+            {demoMode && (
+              <span data-testid="demo-mode-badge" className="rounded-full border border-[#e8c98a] bg-[#fff3e0] px-2.5 py-1 text-[11px] font-bold text-[#a9731f]">● 演示模式</span>
+            )}
           </div>
           <div className="flex gap-2.5">
             <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" data-testid="account-btn" title={authUser ? `已登录 ${authUser.email}` : '登录 / 云端同步'} onClick={() => openModal('auth')}>

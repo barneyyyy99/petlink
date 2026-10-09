@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { GripVertical, X } from 'lucide-react'
 import { useStore, currentRoom, deviceById, camerasList } from '@/store/useStore'
 import { PetSvg } from '@/components/PetSvg'
+import { cameraView } from '@/lib/status'
 
 /** 地图上的摄像头观看浮窗（可拖动）。双击地图摄像头图标 / 宠物气泡“看看它”复用此浮窗。 */
 export function CameraFloat() {
@@ -15,6 +16,7 @@ export function CameraFloat() {
   const setActiveCamera = useStore((s) => s.setActiveCamera)
   const sendCommand = useStore((s) => s.sendCommand)
   const toast = useStore((s) => s.toast)
+  const handoff = useStore((s) => s.handoff)
   const camRoom = useStore((s) => s.homeMap.rooms.find((r) => r.id === cam?.roomId))
 
   const cardRef = useRef<HTMLDivElement>(null)
@@ -45,7 +47,7 @@ export function CameraFloat() {
   }
 
   if (!open) return null
-  const aligned = cam?.roomId === pet.roomId
+  const view = cameraView(pet, cam, handoff)
 
   return (
     <div
@@ -72,23 +74,25 @@ export function CameraFloat() {
       </div>
       <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]">
         <span className="absolute left-3 top-3 rounded-md bg-[rgba(30,50,45,.72)] px-2 py-1 text-[12px] font-bold text-white">
-          ● LIVE · {camRoom?.name ?? '—'}
+          {view.badge}{view.showScene ? ` · ${camRoom?.name ?? '—'}` : ''}
         </span>
-        {cam ? (
+        {view.showScene ? (
           <span className="relative z-[2]">
             <PetSvg behavior={pet.behavior} size={110} />
           </span>
         ) : (
-          <span className="z-[2] text-xs text-[#4c5f59]">当前房间及附近暂无可用摄像头</span>
+          <span className="z-[2] px-6 text-center text-xs text-[#3f514b]">
+            {view.kind === 'connecting' ? '画面连接中…' : view.kind === 'offline' ? '摄像头离线，请在下方切换其他设备' : '当前房间及附近暂无可用摄像头'}
+          </span>
         )}
       </div>
       <div className="px-3.5 pb-3.5 pt-2.5">
         <div className="text-[11px] text-muted">
-          {cam
-            ? aligned
-              ? `${pet.name}位于${room?.name} · 画面与宠物位置一致`
-              : `${pet.name}位于${room?.name} · 展示最近可用的${cam.name}画面`
-            : `${pet.name}位于${room?.name} · 使用项圈 BLE/IMU 持续定位`}
+          {!cam
+            ? `${pet.name}位于${room?.name} · 使用项圈 BLE/IMU 持续定位`
+            : view.detected
+            ? `${pet.name}位于${room?.name} · 演示画面（示例，未接入真实摄像头）`
+            : `${pet.name}位于${room?.name} · 当前${cam.name}画面未检测到${pet.name}（示例画面）`}
         </div>
         {cameras.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5" data-testid="camera-float-switch">

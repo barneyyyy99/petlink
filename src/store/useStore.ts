@@ -78,6 +78,8 @@ export type StoreState = {
   companionEnabled: boolean
   moodSignal: boolean
   diarySeed: number
+  /** 演示模式：开启后才在正式界面显示模拟按钮/演示控制台（持久化） */
+  demoMode: boolean
 
   // ---- UI / 瞬态（不持久化） ----
   page: PageKey
@@ -107,6 +109,7 @@ export type StoreState = {
   closeModal: () => void
   toggleDrawer: (v?: boolean) => void
   toggleDemo: (v?: boolean) => void
+  setDemoMode: (v: boolean) => void
 
   applyHomeMap: (rooms: Room[], name?: string, backgroundImage?: string) => void
   moveToRoom: (roomId: string) => void
@@ -244,6 +247,7 @@ export const useStore = create<StoreState>()(
       modal: null,
       drawerOpen: false,
       demoOpen: false,
+      demoMode: false,
       toasts: [],
       handoff: { phase: 'idle', message: '' },
       transitionRoute: null,
@@ -267,6 +271,7 @@ export const useStore = create<StoreState>()(
       closeModal: () => set({ modal: null }),
       toggleDrawer: (v) => set((s) => ({ drawerOpen: typeof v === 'boolean' ? v : !s.drawerOpen })),
       toggleDemo: (v) => set((s) => ({ demoOpen: typeof v === 'boolean' ? v : !s.demoOpen })),
+      setDemoMode: (v) => set({ demoMode: v, demoOpen: v }),
 
       resolveCameraId: (roomId) => {
         const { devices, homeMap } = get()
@@ -558,6 +563,7 @@ export const useStore = create<StoreState>()(
         companionEnabled: s.companionEnabled,
         moodSignal: s.moodSignal,
         diarySeed: s.diarySeed,
+        demoMode: s.demoMode,
       }),
       migrate: (persisted: any, version) => {
         // schema 版本不一致时丢弃旧数据，回到 seed，避免结构错乱
@@ -883,6 +889,7 @@ export type PersistSlice = Pick<
   | 'companionEnabled'
   | 'moodSignal'
   | 'diarySeed'
+  | 'demoMode'
 >
 
 export function getSnapshot(): PersistSlice {
@@ -903,6 +910,7 @@ export function getSnapshot(): PersistSlice {
     companionEnabled: s.companionEnabled,
     moodSignal: s.moodSignal,
     diarySeed: s.diarySeed,
+    demoMode: s.demoMode,
   }
 }
 

@@ -1,6 +1,7 @@
 import { useStore, currentRoom, deviceById, camerasList } from '@/store/useStore'
 import { Modal } from '@/components/Modal'
 import { PetSvg } from '@/components/PetSvg'
+import { cameraView } from '@/lib/status'
 
 export function CameraModal() {
   const modal = useStore((s) => s.modal)
@@ -17,9 +18,10 @@ export function CameraModal() {
 
   const camRoom = useStore((s) => s.homeMap.rooms.find((r) => r.id === cam?.roomId))
   const aligned = cam?.roomId === pet.roomId
+  const view = cameraView(pet, cam, handoff)
 
   return (
-    <Modal open={modal === 'camera'} onClose={close} wide eyebrow="LIVE CAMERA" title={cam ? cam.name : '暂无可用摄像头'} desc="宠物跨房间后可由下一台摄像头继续识别并接力。" testId="camera-modal">
+    <Modal open={modal === 'camera'} onClose={close} wide eyebrow="DEMO CAMERA" title={cam ? cam.name : '暂无可用摄像头'} desc="示例画面：当前为演示视频源，未接入真实摄像头；宠物跨房间后可由下一台摄像头继续识别并接力。" testId="camera-modal">
       {handoff.phase !== 'idle' && (
         <div data-testid="handoff-banner" className="animate-pop mb-3 rounded-xl border border-[#d1e5de] bg-[#eaf5f1] px-3 py-2.5 text-[11px] leading-relaxed text-[#527067]">
           <b className="text-teal">摄像头接力</b>
@@ -29,16 +31,19 @@ export function CameraModal() {
       )}
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-[22px] bg-gradient-to-br from-[#d9e4dc] via-[#c7d4cc] to-[#aebeb5]">
         <div className="absolute left-3.5 top-3.5 rounded-lg bg-[rgba(30,50,45,.72)] px-2.5 py-1.5 text-[11px] text-white">
-          LIVE · {camRoom?.name ?? '—'}
+          {view.badge}{view.showScene ? ` · ${camRoom?.name ?? '—'}` : ''}
         </div>
-        {cam ? (
+        {view.showScene ? (
           <div className="relative z-[2] grid place-items-center">
             <PetSvg behavior={pet.behavior} size={140} />
           </div>
         ) : (
-          <div className="z-[2] text-sm text-[#4c5f59]">当前房间及附近暂无可用摄像头</div>
+          <div className="z-[2] text-sm text-[#4c5f59]">{view.kind === 'connecting' ? '画面连接中…' : view.kind === 'offline' ? '摄像头离线，请在下方切换其他设备' : '当前房间及附近暂无可用摄像头'}</div>
         )}
       </div>
+      {view.showScene && !view.detected && (
+        <div className="mt-1.5 text-[11px] text-[#a9731f]">当前画面未检测到{pet.name}，展示最近摄像头的示例画面</div>
+      )}
       <div className="mt-1.5 text-[11px] text-muted">
         {cam
           ? aligned
