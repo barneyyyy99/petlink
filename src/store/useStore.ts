@@ -52,6 +52,7 @@ export type ModalKey =
   | 'deviceControl'
   | 'shareCard'
   | 'liveLocate'
+  | 'desktopWidget'
   | 'auth'
   | null
 

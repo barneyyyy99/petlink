@@ -24,6 +24,7 @@ import { DeviceModal } from '@/modals/DeviceModal'
 import { DeviceControlModal } from '@/modals/DeviceControlModal'
 import { EventModal, ActionModal, SoundModal, FriendsModal, LiveLocateModal } from '@/modals/MiscModals'
 import { AuthModal } from '@/modals/AuthModal'
+import { DesktopWidgetModal } from '@/modals/DesktopWidgetModal'
 import { Icon, type IconName } from '@/components/Icon'
 
 const NAV: { key: PageKey; icon: IconName; label: string }[] = [
@@ -142,6 +143,7 @@ export default function App() {
       <FriendsModal />
       <LiveLocateModal />
       <AuthModal />
+      <DesktopWidgetModal />
     </div>
   )
 }

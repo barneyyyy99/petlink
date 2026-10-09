@@ -124,6 +124,25 @@ test('浮窗模式仅显示户型地图（无主导航）', async ({ page }) => 
   await expect(page.getByTestId('nav-home')).toHaveCount(0)
 })
 
+test('桌面组件：从我的页和地图页均可打开下载选择', async ({ page }) => {
+  await gotoFresh(page)
+  // 我的页卡片入口
+  await page.getByTestId('nav-me').click()
+  await page.getByRole('button', { name: /桌面组件/ }).click()
+  await expect(page.getByTestId('desktop-widget-modal')).toBeVisible()
+  await expect(page.getByTestId('desktop-all-versions')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('desktop-widget-modal')).toBeHidden()
+  // 地图页按钮入口
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('mini-widget-btn').click()
+  await expect(page.getByTestId('desktop-widget-modal')).toBeVisible()
+  // 三平台下载入口齐全
+  await expect(page.getByTestId('desktop-dl-mac')).toBeVisible()
+  await expect(page.getByTestId('desktop-dl-win')).toBeVisible()
+  await expect(page.getByTestId('desktop-dl-linux')).toBeVisible()
+})
+
 test('桌面组件仅显示 3D 房间与宠物（无边框/无其他元素）', async ({ page }) => {
   await page.goto('/?mini=1')
   // 只有 3D 房间 + 宠物

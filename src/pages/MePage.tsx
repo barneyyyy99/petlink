@@ -13,6 +13,7 @@ const ITEMS: { icon: IconName; title: string; desc: string; modal: any; link: st
   { icon: 'chat', title: '宠物对话框', desc: '用消息流承载找主人、语音、行为与互动事件。', modal: 'chat', link: '打开对话 →', group: '互动与陪伴' },
   { icon: 'voice', title: '主人声音', desc: '录制声线并在音箱 / 智能屏远程播放。', modal: 'voice', link: '声音调教 →', group: '互动与陪伴' },
   { icon: 'friends', title: '毛茸茸好友', desc: '添加附近宠友，并可向对方主人发起联系。', modal: 'friends', link: '附近好友 →', group: '互动与陪伴' },
+  { icon: 'desktop', title: '桌面组件', desc: '把宠物和 3D 房间作为桌面小组件常驻屏幕，实时移动。', modal: 'desktopWidget', link: '获取组件 →', group: '互动与陪伴' },
 ]
 const GROUP_ORDER: Group[] = ['家庭与设备', '宠物安全', '互动与陪伴']
 
