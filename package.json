@@ -63,7 +63,8 @@
       {
         "provider": "github",
         "owner": "barneyyyy99",
-        "repo": "petlink"
+        "repo": "petlink",
+        "releaseType": "release"
       }
     ],
     "mac": {
