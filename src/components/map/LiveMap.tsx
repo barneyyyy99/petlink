@@ -4,6 +4,7 @@ import { MAP_W, MAP_H, roomBounds, roomCentroid } from '@/domain/geometry'
 import { floorColor, WALL } from './furniture'
 import { drawFurniture, defaultFurniture } from './furnitureLib'
 import { DeviceGlyph } from './DeviceGlyph'
+import { HomeIso } from './HomeIso'
 import { PetFace } from '@/components/PetFace'
 import { behaviorLabel, roomDevices, behaviorColor, behaviorBadge } from '@/lib/tracking'
 import { relativeTime, timeHM } from '@/lib/time'
@@ -104,7 +105,7 @@ function deviceStatusText(dev: Device, room?: { environment: { temperature: numb
   }
 }
 
-export function LiveMap() {
+export function LiveMap({ defaultView = 'iso', showToggle = true }: { defaultView?: 'iso' | 'flat'; showToggle?: boolean } = {}) {
   const rooms = useStore((s) => s.homeMap.rooms)
   const devices = useStore((s) => s.devices)
   const pets = useStore((s) => s.pets)
@@ -120,6 +121,7 @@ export function LiveMap() {
   const sendCommand = useStore((s) => s.sendCommand)
   const openEvent = useStore((s) => s.openEvent)
   const [popover, setPopover] = useState<string | null>(null)
+  const [view, setView] = useState<'iso' | 'flat'>(defaultView)
   const [wander, setWander] = useState<Record<string, { x: number; y: number }>>({})
   // 区分设备图标的单击（打开控制）与双击（摄像头打开浮窗）
   const clickTimer = useRef<number | null>(null)
@@ -159,8 +161,35 @@ export function LiveMap() {
       : []
   const historyPts = historyNodes.map((n) => n.pt)
 
+  const viewToggle = showToggle ? (
+    <div className="absolute right-3 top-3 z-20 flex rounded-full bg-white/85 p-0.5 shadow-softsm backdrop-blur" data-testid="map-view-toggle">
+      <button
+        onClick={() => setView('iso')}
+        className={`rounded-full px-3 py-1 text-[12px] font-bold ${view === 'iso' ? 'bg-teal text-white shadow-softsm' : 'text-[#6f817b]'}`}
+      >
+        立体
+      </button>
+      <button
+        onClick={() => setView('flat')}
+        className={`rounded-full px-3 py-1 text-[12px] font-bold ${view === 'flat' ? 'bg-teal text-white shadow-softsm' : 'text-[#6f817b]'}`}
+      >
+        平面
+      </button>
+    </div>
+  ) : null
+
+  if (view === 'iso') {
+    return (
+      <div className="relative mx-auto max-h-full w-full">
+        <HomeIso />
+        {viewToggle}
+      </div>
+    )
+  }
+
   return (
     <div className="relative mx-auto aspect-[5/3] max-h-full w-full overflow-hidden rounded-[28px] border border-line bg-[#fafcf9] shadow-soft">
+      {viewToggle}
       <div
         className="absolute inset-5 overflow-hidden rounded-[22px] border border-[#e2e9e4]"
         style={{ background: amb.bg, transition: 'background 1.2s ease' }}

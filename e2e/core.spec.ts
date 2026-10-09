@@ -41,7 +41,7 @@ test('寻宠卡片按资料生成并可上传照片', async ({ page }) => {
 test('远程投喂：确认克数 → 执行中 → 执行成功（闭环反馈）', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
-  await page.getByTestId('live-map-svg').waitFor()
+  await page.getByTestId('home-iso-svg').waitFor()
   await page.getByTestId('map-device-feeder').first().click({ force: true })
   await expect(page.getByTestId('device-control-modal')).toBeVisible({ timeout: 2000 })
   await expect(page.getByTestId('feed-portions')).toBeVisible()
@@ -69,10 +69,10 @@ test('删除房间需二次确认（可取消/可撤销）', async ({ page }) =>
 test('地图设备模式显示设备状态（与实时模式内容不同）', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
-  await page.getByTestId('live-map-svg').waitFor()
-  await expect(page.getByTestId('live-map-svg')).not.toContainText('余粮')
+  await page.getByTestId('home-iso-svg').waitFor()
+  await expect(page.getByTestId('home-iso-svg')).not.toContainText('余粮')
   await page.getByTestId('map-mode-devices').click()
-  await expect(page.getByTestId('live-map-svg')).toContainText('余粮')
+  await expect(page.getByTestId('home-iso-svg')).toContainText('余粮')
 })
 
 test('记录页时间筛选（今天/近7天/本月）真实改变数据', async ({ page }) => {
@@ -182,12 +182,12 @@ test('编辑已有房间加顶点 + 新增房间 + 应用 + 刷新持久化', as
   await page.getByTestId('apply-map').click()
   await expect(page.getByTestId('map-builder-modal')).toBeHidden()
   // 地图上出现新房间标签
-  await expect(page.getByTestId('live-map-svg')).toContainText('宠物房')
+  await expect(page.getByTestId('home-iso-svg')).toContainText('宠物房')
 
   // 刷新后仍保留“宠物房”
   await page.reload()
   await page.getByTestId('nav-map').click()
-  await expect(page.getByTestId('live-map-svg')).toContainText('宠物房')
+  await expect(page.getByTestId('home-iso-svg')).toContainText('宠物房')
 })
 
 test('模拟跨房间：位置更新 + 接力 + 追踪卡变化', async ({ page }) => {
@@ -332,7 +332,7 @@ test('账号入口可打开账号与云端同步弹层', async ({ page }) => {
 test('双击地图摄像头图标打开可观看浮窗并可关闭', async ({ page }) => {
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
-  await page.getByTestId('live-map-svg').waitFor()
+  await page.getByTestId('home-iso-svg').waitFor()
   await page.getByTestId('map-camera').first().dblclick({ force: true })
   await expect(page.getByTestId('camera-float')).toBeVisible()
   await page.getByTestId('camera-float-close').click()

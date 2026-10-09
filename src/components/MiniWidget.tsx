@@ -84,7 +84,7 @@ export function MiniWidget() {
       )}
 
       <div className="min-h-0 flex-1 p-2">
-        {view === '3d' && room ? <Room3D room={room} pet={pet} style={style} /> : <LiveMap />}
+        {view === '3d' && room ? <Room3D room={room} pet={pet} style={style} /> : <LiveMap defaultView="flat" showToggle={false} />}
       </div>
       <footer className="flex items-center justify-between border-t border-line bg-white/90 px-3 py-1.5 text-[11px] text-muted">
         <span className="flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-teal-2" /> 实时位置</span>
