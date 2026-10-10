@@ -8,7 +8,8 @@ import { behaviorLabel, roomDevices, behaviorColor, behaviorBadge } from '@/lib/
 import { relativeTime, timeHM } from '@/lib/time'
 import { ambianceFor } from '@/lib/ambiance'
 import { eventsForPet } from '@/lib/diary'
-import { SLAB_H, FURN_UNIT, SIN, darken, isoFloor, furnStyle, makeHomeProjector, isoPoints } from './iso'
+import { SLAB_H, FURN_UNIT, SIN, darken, isoFloor, makeHomeProjector, isoPoints } from './iso'
+import { drawIsoFurniture } from './isoFurniture'
 import type { PetBehavior, Device, Room } from '@/domain/types'
 
 const behaviorAnim: Partial<Record<PetBehavior, string>> = {
@@ -154,26 +155,7 @@ export function HomeIso() {
               <text x={P(c.x, c.y, SLAB_H).X} y={top.reduce((m, p) => Math.min(m, p.Y), Infinity) + 20} fontSize={16} fontWeight={800} textAnchor="middle" fill="#6f8880" style={{ pointerEvents: 'none' }}>
                 {r.name}
               </text>
-              {furniture.map(({ f }) => {
-                const fs = furnStyle(f.type)
-                const h = fs.h * FURN_UNIT
-                const x0 = f.x, y0 = f.y, x1 = f.x + f.w, y1 = f.y + f.h
-                if (h <= 0) {
-                  const flat = [P(x0, y0, SLAB_H + 0.5), P(x1, y0, SLAB_H + 0.5), P(x1, y1, SLAB_H + 0.5), P(x0, y1, SLAB_H + 0.5)]
-                  return <polygon key={f.id} points={isoPoints(flat)} fill={fs.base} opacity={0.72} />
-                }
-                const zb = SLAB_H
-                const tp = [P(x0, y0, zb + h), P(x1, y0, zb + h), P(x1, y1, zb + h), P(x0, y1, zb + h)]
-                const rt = [P(x1, y0, zb), P(x1, y1, zb), P(x1, y1, zb + h), P(x1, y0, zb + h)]
-                const fr = [P(x0, y1, zb), P(x1, y1, zb), P(x1, y1, zb + h), P(x0, y1, zb + h)]
-                return (
-                  <g key={f.id} style={{ pointerEvents: 'none' }}>
-                    <polygon points={isoPoints(rt)} fill={darken(fs.base, 0.24)} />
-                    <polygon points={isoPoints(fr)} fill={darken(fs.base, 0.12)} />
-                    <polygon points={isoPoints(tp)} fill={fs.base} stroke="rgba(20,40,34,.08)" strokeWidth={1} />
-                  </g>
-                )
-              })}
+              {furniture.map(({ f }) => drawIsoFurniture(P, f, SLAB_H, FURN_UNIT))}
             </g>
           )
         })}
