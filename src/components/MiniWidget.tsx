@@ -55,6 +55,11 @@ export function MiniWidget() {
     desktop?.expand?.()
   }
 
+  // 退出整个桌面组件程序（仅桌面 App）
+  const desktopApi = (window as unknown as { petlinkDesktop?: { quit?: () => void } }).petlinkDesktop
+  const isDesktop = !!desktopApi
+  const quit = () => desktopApi?.quit?.()
+
   return (
     <div className="group app-drag relative h-screen w-screen overflow-hidden bg-transparent" data-testid="mini-widget">
       {room && (
@@ -102,6 +107,17 @@ export function MiniWidget() {
         >
           ×
         </button>
+        {isDesktop && (
+          <button
+            data-testid="mini-quit"
+            aria-label="退出桌面组件程序"
+            title="退出程序"
+            onClick={quit}
+            className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-[12px] text-white hover:bg-[#c0564e]"
+          >
+            ⏻
+          </button>
+        )}
       </div>
 
       {/* 未登录且已配置云端：底部常驻一个显眼的登录入口（解决"找不到登录入口"） */}
@@ -116,10 +132,12 @@ export function MiniWidget() {
         </button>
       )}
 
-      {/* 摄像头观看浮窗（复用地图同款组件，直接看对应房间画面） */}
-      <CameraFloat />
-      {/* 账号 / 云端同步弹层（组件内可直接登录，与网页端同账号即同步） */}
-      <AuthModal />
+      {/* 浮层：摄像头画面 + 账号登录弹层。必须放在 no-drag 区域，
+          否则 Electron 的拖拽区域会吞掉输入/点击，导致无法输入、无法关闭 */}
+      <div className="app-no-drag">
+        <CameraFloat />
+        <AuthModal />
+      </div>
     </div>
   )
 }

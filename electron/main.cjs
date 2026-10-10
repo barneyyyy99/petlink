@@ -60,6 +60,7 @@ app.on('window-all-closed', () => {
 
 // 渲染进程可请求关闭 / 置顶切换
 ipcMain.on('mini:close', () => win && win.close())
+ipcMain.on('app:quit', () => app.quit())
 ipcMain.on('mini:toggle-top', () => {
   if (!win) return
   const next = !win.isAlwaysOnTop()

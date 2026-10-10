@@ -8,4 +8,6 @@ contextBridge.exposeInMainWorld('petlinkDesktop', {
   // 展开为完整应用 / 收起为桌面组件（同一窗口，store 不重载）
   expand: () => ipcRenderer.send('win:expand'),
   collapse: () => ipcRenderer.send('win:collapse'),
+  // 退出整个程序
+  quit: () => ipcRenderer.send('app:quit'),
 })
