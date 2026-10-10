@@ -14,6 +14,7 @@
     "lint": "tsc --noEmit",
     "electron:dev": "concurrently -k \"vite --port 5178\" \"wait-on tcp:5178 && cross-env ELECTRON_START_URL=http://localhost:5178/?mini=1 electron .\"",
     "electron:build": "cross-env VITE_ELECTRON=1 vite build && electron-builder",
+    "electron:dist": "cross-env VITE_ELECTRON=1 vite build && electron-builder --publish never",
     "electron:publish": "cross-env VITE_ELECTRON=1 vite build && electron-builder --publish always",
     "electron:start": "cross-env VITE_ELECTRON=1 vite build && electron ."
   },
