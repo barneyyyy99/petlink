@@ -47,7 +47,7 @@ export function HomePage() {
   // 首页围绕“今天”：状态分 / 事件 / 日记只统计今日
   const todayEvents = filterByRange(petEvents, 'today', Date.now())
   const sum = summarizeDay(todayEvents, home)
-  const recent = [...todayEvents].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3)
+  const recent = [...todayEvents].sort((a, b) => b.timestamp - a.timestamp).slice(0, 2)
   // AI 日记：由该宠物当日真实事件生成（可换一条）
   const diary = buildDiary(sum, moodSignal, diarySeed)
   // 状态分：由当日真实事件推导（透明可解释），而非写死
@@ -90,7 +90,7 @@ export function HomePage() {
 
       <div className="mt-5 grid grid-cols-[minmax(0,1.4fr)_minmax(320px,.76fr)] gap-5 max-[1000px]:grid-cols-1">
         <div>
-          <div className="relative min-h-[320px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#2b8176] to-[#4b9c8e] p-8 text-white shadow-soft">
+          <div className="relative min-h-[288px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#2b8176] to-[#4b9c8e] p-7 text-white shadow-soft">
             <div className="eyebrow text-white/70">今日守护对象</div>
             {/* 宠物名 + 其右侧的实时状态 */}
             <div className="my-3 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -153,27 +153,29 @@ export function HomePage() {
             <QuickCard icon="find" bg="bg-teal-soft text-teal" title="寻宠" sub="灯光 + 声音" onClick={() => { goPage('map'); toggleDrawer(true); useStore.getState().toast('info', '已开启寻宠模式：灯光 + 声音') }} />
             <QuickCard icon="peek" bg="bg-blue-soft text-blue" title="看一眼" sub={`${room?.name} · 在线`} onClick={() => openCamera()} />
           </div>
+        </div>
 
-          <div className="mt-6 eyebrow">今日状态</div>
-          <div className="card mt-2.5">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2"><b className="text-lg">{pet.name}今日状态分</b><span className="badge">● 无异常</span></div>
-              </div>
-              <div className="text-right"><div className="text-5xl font-extrabold text-teal">{score}</div></div>
+        <div className="flex flex-col gap-3">
+          {/* 今日状态（移到右侧，尺寸与其它卡片一致） */}
+          <div className="card">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-bold">今日状态</h3>
+              <span className="badge">● 无异常</span>
             </div>
-            <div className="mt-4 grid grid-cols-3 border-t border-line pt-4 text-center">
+            <div className="flex items-center justify-between">
+              <b className="text-sm text-muted">{pet.name}今日状态分</b>
+              <div className="text-5xl font-extrabold text-teal">{score}</div>
+            </div>
+            <div className="mt-2 grid grid-cols-3 border-t border-line pt-2 text-center">
               <div><b className="block text-lg">{sum.roomChanges}</b><span className="text-[11px] text-muted">跨房间</span></div>
               <div><b className="block text-lg">{sum.eats + sum.drinks}</b><span className="text-[11px] text-muted">进食/饮水</span></div>
               <div><b className="block text-lg">{sum.ownerInteractions}</b><span className="text-[11px] text-muted">远程陪伴</span></div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-4">
           <div className="card">
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">我的家</h3><button className="text-xs font-bold text-teal" onClick={() => goPage('map')}>进入地图 →</button></div>
-            <div className="flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-4">
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-bold">我的家</h3><button className="text-xs font-bold text-teal" onClick={() => goPage('map')}>进入地图 →</button></div>
+            <div className="flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3">
               <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
               <div><b className="text-sm">{pet.name}在 {room?.name}</b><p className="mt-1 text-xs text-muted">{env?.temperature.toFixed(1)}℃ · 湿度 {env?.humidity}% · {room?.devices.length ? '摄像头在线' : '项圈定位在线'}</p></div>
             </div>
@@ -190,10 +192,10 @@ export function HomePage() {
           </div>
 
           <div className="card">
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">今天发生了什么</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>全部踪迹</button></div>
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-bold">今天发生了什么</h3><button className="text-xs font-bold text-teal" onClick={() => toggleDrawer(true)}>全部踪迹</button></div>
             {recent.length ? (
               recent.map((e) => (
-                <div key={e.id} className="mb-2.5 flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3.5">
+                <div key={e.id} className="mb-2 flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3">
                   <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
                   <div><b className="text-sm">{e.title}</b><p className="mt-1 text-xs text-muted">{e.detail}</p></div>
                 </div>
@@ -210,7 +212,7 @@ export function HomePage() {
 
 function QuickCard({ icon, bg, title, sub, onClick }: { icon: IconName; bg: string; title: string; sub: string; onClick: () => void }) {
   return (
-    <button className="card min-h-[108px] text-left transition hover:-translate-y-0.5" onClick={onClick}>
+    <button className="card min-h-[92px] text-left transition hover:-translate-y-0.5" onClick={onClick}>
       <div className={`mb-2.5 grid h-9 w-9 place-items-center rounded-xl ${bg}`}><Icon name={icon} size={18} /></div>
       <b className="text-base">{title}</b>
       <span className="mt-1.5 block text-xs text-muted">{sub}</span>
