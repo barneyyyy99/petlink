@@ -46,14 +46,6 @@ export function MapPage() {
               </button>
             ))}
           </div>
-          <button
-            className="btn whitespace-nowrap"
-            data-testid="mini-widget-btn"
-            title="把宠物和 3D 房间作为桌面小组件：无边框、置顶、实时移动"
-            onClick={() => openModal('desktopWidget')}
-          >
-            桌面组件
-          </button>
           <button className="btn whitespace-nowrap" data-testid="map-fence-btn" onClick={() => openModal('fence')}>
             围栏
           </button>

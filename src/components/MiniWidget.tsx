@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { useAuth } from '@/store/useAuth'
 import { Room3D } from '@/components/map/Room3D'
+import { CameraFloat } from '@/components/map/CameraFloat'
 
 /**
  * 桌面组件 / 浮窗模式（?mini=1 进入）：
@@ -14,6 +15,7 @@ export function MiniWidget() {
   const setMapMode = useStore((s) => s.setMapMode)
   const simulateNextRoom = useStore((s) => s.simulateNextRoom)
   const setWidgetMode = useStore((s) => s.setWidgetMode)
+  const openCameraFloat = useStore((s) => s.openCameraFloat)
   const cloudUser = useAuth((s) => s.user)
 
   useEffect(() => {
@@ -61,8 +63,17 @@ export function MiniWidget() {
           <Room3D room={room} pet={pet} style="cartoon" transparent showLabel={false} />
         </div>
       )}
-      {/* 悬停才出现的控制：展开完整应用 / 关闭。静止时只有 3D 房间与宠物 */}
+      {/* 悬停才出现的控制：看摄像头 / 展开完整应用 / 关闭。静止时只有 3D 房间与宠物 */}
       <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+        <button
+          data-testid="mini-camera"
+          aria-label="查看当前房间摄像头画面"
+          title="看当前房间摄像头"
+          onClick={() => openCameraFloat()}
+          className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-[13px] text-white hover:bg-black/55"
+        >
+          📷
+        </button>
         <button
           data-testid="mini-expand"
           aria-label="展开完整应用"
@@ -81,6 +92,9 @@ export function MiniWidget() {
           ×
         </button>
       </div>
+
+      {/* 摄像头观看浮窗（复用地图同款组件，直接看对应房间画面） */}
+      <CameraFloat />
     </div>
   )
 }

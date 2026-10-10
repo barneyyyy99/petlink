@@ -124,7 +124,7 @@ test('浮窗模式仅显示户型地图（无主导航）', async ({ page }) => 
   await expect(page.getByTestId('nav-home')).toHaveCount(0)
 })
 
-test('桌面组件：从我的页和地图页均可打开下载选择', async ({ page }) => {
+test('桌面组件：从我的页和首页均可打开下载选择', async ({ page }) => {
   await gotoFresh(page)
   // 我的页卡片入口
   await page.getByTestId('nav-me').click()
@@ -133,9 +133,9 @@ test('桌面组件：从我的页和地图页均可打开下载选择', async ({
   await expect(page.getByTestId('desktop-all-versions')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('desktop-widget-modal')).toBeHidden()
-  // 地图页按钮入口
-  await page.getByTestId('nav-map').click()
-  await page.getByTestId('mini-widget-btn').click()
+  // 首页入口
+  await page.getByTestId('nav-home').click()
+  await page.getByTestId('home-desktop-widget').click()
   await expect(page.getByTestId('desktop-widget-modal')).toBeVisible()
   // 三平台下载入口齐全
   await expect(page.getByTestId('desktop-dl-mac')).toBeVisible()
@@ -143,14 +143,17 @@ test('桌面组件：从我的页和地图页均可打开下载选择', async ({
   await expect(page.getByTestId('desktop-dl-linux')).toBeVisible()
 })
 
-test('完整应用 ↔ 组件视图可在同一窗口互相切换', async ({ page }) => {
+test('完整应用 ↔ 组件视图可在同一窗口互相切换，组件内可开摄像头', async ({ page }) => {
   await gotoFresh(page)
-  // 完整应用 → 组件视图
-  await page.getByTestId('nav-map').click()
-  await page.getByTestId('mini-widget-btn').click()
+  // 首页入口 → 弹窗 → 切换到组件视图
+  await page.getByTestId('home-desktop-widget').click()
   await page.getByTestId('switch-to-widget').click()
   await expect(page.getByTestId('mini-widget')).toBeVisible()
   await expect(page.getByTestId('nav-home')).toHaveCount(0)
+  // 组件内可直接打开对应摄像头画面
+  await page.getByTestId('mini-camera').click({ force: true })
+  await expect(page.getByTestId('camera-float')).toBeVisible()
+  await page.getByTestId('camera-float-close').click()
   // 组件视图 → 完整应用（同一窗口，store 不丢）
   await page.getByTestId('mini-expand').click({ force: true })
   await expect(page.getByTestId('nav-home')).toBeVisible()
