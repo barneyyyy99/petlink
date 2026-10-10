@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useStore } from '@/store/useStore'
 import type { PageKey } from '@/store/useStore'
 import { useAuth } from '@/store/useAuth'
+import { isCloudEnabled } from '@/lib/supabase'
 import { HomePage } from '@/pages/HomePage'
 import { MapPage } from '@/pages/MapPage'
 import { RecordsPage } from '@/pages/RecordsPage'
@@ -45,6 +46,7 @@ export default function App() {
   const authUser = useAuth((s) => s.user)
   const authInit = useAuth((s) => s.init)
   const authRecovery = useAuth((s) => s.recovery)
+  const authSyncing = useAuth((s) => s.syncing)
 
   useEffect(() => {
     authInit()
@@ -103,8 +105,15 @@ export default function App() {
             )}
           </div>
           <div className="flex gap-2.5">
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" data-testid="account-btn" title={authUser ? `已登录 ${authUser.email}` : '登录 / 云端同步'} onClick={() => openModal('auth')}>
+            <button className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" data-testid="account-btn" title={authUser ? `已登录 ${authUser.email}·多设备云同步中` : isCloudEnabled ? '登录 / 云端同步' : '登录 / 云端同步（未配置）'} onClick={() => openModal('auth')}>
               <Icon name={authUser ? 'cloud' : 'login'} size={18} />
+              {authUser && (
+                <span
+                  data-testid="cloud-sync-dot"
+                  className={`absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${authSyncing ? 'animate-pulse bg-[#e0a53c]' : 'bg-teal'}`}
+                  aria-hidden
+                />
+              )}
             </button>
             <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white/90 text-[#667773]" title="通知" onClick={() => toast('info', '没有新的异常通知')}>
               <Icon name="bell" size={18} />

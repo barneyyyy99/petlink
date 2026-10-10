@@ -27,3 +27,7 @@ jobs:
         run: npm run electron:publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 云同步：把 Supabase 密钥注入构建，桌面 App 才能登录并与网页版跨设备同步。
+          # 在 GitHub 仓库 Settings → Secrets and variables → Actions 配置这两个 secret。
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
