@@ -12,6 +12,7 @@ const URL_OF: Record<DesktopOS, string> = {
 export function DesktopWidgetModal() {
   const open = useStore((s) => s.modal === 'desktopWidget')
   const close = useStore((s) => s.closeModal)
+  const setWidgetMode = useStore((s) => s.setWidgetMode)
   const pet = useStore((s) => s.pet)
   const room = useStore(currentRoom)
 
@@ -21,6 +22,14 @@ export function DesktopWidgetModal() {
 
   const preview = () =>
     window.open(`${window.location.pathname}?mini=1`, 'petlink-mini', 'width=480,height=360,menubar=no,toolbar=no,location=no,status=no')
+
+  // 把当前窗口切换成组件视图（与完整应用共享 store，位置天然同步）
+  const switchToWidget = () => {
+    close()
+    setWidgetMode(true)
+    const desktop = (window as unknown as { petlinkDesktop?: { collapse?: () => void } }).petlinkDesktop
+    desktop?.collapse?.()
+  }
 
   return (
     <Modal
@@ -65,8 +74,11 @@ export function DesktopWidgetModal() {
           <a href={DESKTOP_RELEASE.releasesPage} target="_blank" rel="noreferrer" className="text-center text-xs font-bold text-teal" data-testid="desktop-all-versions">
             查看所有版本 →
           </a>
-          <button className="btn mt-1" data-testid="desktop-preview" onClick={preview}>
-            先在浏览器里预览效果
+          <button className="btn btn-primary" data-testid="switch-to-widget" onClick={switchToWidget}>
+            切换到组件视图（本窗口）
+          </button>
+          <button className="btn" data-testid="desktop-preview" onClick={preview}>
+            在新窗口预览浮窗
           </button>
           <p className="text-[11px] leading-relaxed text-muted">
             安装包未经签名。macOS 若提示「已损坏/无法打开」，把 app 拖进「应用程序」后，在「终端」执行一次

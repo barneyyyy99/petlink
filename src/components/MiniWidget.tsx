@@ -12,6 +12,7 @@ export function MiniWidget() {
   const room = useStore(currentRoom)
   const setMapMode = useStore((s) => s.setMapMode)
   const simulateNextRoom = useStore((s) => s.simulateNextRoom)
+  const setWidgetMode = useStore((s) => s.setWidgetMode)
 
   useEffect(() => {
     setMapMode('live')
@@ -22,6 +23,23 @@ export function MiniWidget() {
     const t = setInterval(() => simulateNextRoom(), 16000)
     return () => clearInterval(t)
   }, [simulateNextRoom])
+
+  // 展开为完整应用：同一窗口切换（共享 store，位置天然同步）
+  const expand = () => {
+    setWidgetMode(false)
+    const desktop = (window as unknown as { petlinkDesktop?: { expand?: () => void } }).petlinkDesktop
+    if (desktop?.expand) {
+      desktop.expand()
+      return
+    }
+    // 浏览器：去掉 ?mini 参数并尝试全屏
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('mini')
+      window.history.replaceState(null, '', url.toString())
+    } catch { /* noop */ }
+    document.documentElement.requestFullscreen?.().catch(() => {})
+  }
 
   const exit = () => {
     const desktop = (window as unknown as { petlinkDesktop?: { close: () => void } }).petlinkDesktop
@@ -40,15 +58,26 @@ export function MiniWidget() {
           <Room3D room={room} pet={pet} style="cartoon" transparent showLabel={false} />
         </div>
       )}
-      {/* 关闭按钮：静止时完全透明，仅悬停淡入，保证"只有 3D 地图与宠物" */}
-      <button
-        data-testid="mini-exit"
-        aria-label="关闭桌面组件"
-        onClick={exit}
-        className="app-no-drag absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/35 text-white opacity-0 transition hover:bg-black/55 group-hover:opacity-100"
-      >
-        ×
-      </button>
+      {/* 悬停才出现的控制：展开完整应用 / 关闭。静止时只有 3D 房间与宠物 */}
+      <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+        <button
+          data-testid="mini-expand"
+          aria-label="展开完整应用"
+          title="切换到完整应用"
+          onClick={expand}
+          className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-white hover:bg-black/55"
+        >
+          ⤢
+        </button>
+        <button
+          data-testid="mini-exit"
+          aria-label="关闭桌面组件"
+          onClick={exit}
+          className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-white hover:bg-black/55"
+        >
+          ×
+        </button>
+      </div>
     </div>
   )
 }

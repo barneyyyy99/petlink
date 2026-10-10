@@ -37,6 +37,7 @@ const NAV: { key: PageKey; icon: IconName; label: string }[] = [
 export default function App() {
   const page = useStore((s) => s.page)
   const goPage = useStore((s) => s.goPage)
+  const widgetMode = useStore((s) => s.widgetMode)
   const demoMode = useStore((s) => s.demoMode)
   const setDemoMode = useStore((s) => s.setDemoMode)
   const openModal = useStore((s) => s.openModal)
@@ -53,8 +54,8 @@ export default function App() {
     if (authRecovery) openModal('auth')
   }, [authRecovery, openModal])
 
-  // 浮窗 / 桌面组件模式：仅渲染迷你地图
-  if (new URLSearchParams(window.location.search).get('mini') === '1') {
+  // 浮窗 / 桌面组件模式：仅渲染迷你地图（可运行时切换，与完整应用共享同一 store）
+  if (widgetMode) {
     return <MiniWidget />
   }
 

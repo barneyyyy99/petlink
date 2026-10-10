@@ -65,3 +65,28 @@ ipcMain.on('mini:toggle-top', () => {
   const next = !win.isAlwaysOnTop()
   win.setAlwaysOnTop(next, 'floating')
 })
+
+// 展开为完整应用：放大并居中、取消置顶（同一窗口，不重载页面）
+ipcMain.on('win:expand', () => {
+  if (!win) return
+  const { workAreaSize } = screen.getPrimaryDisplay()
+  const w = Math.min(1180, workAreaSize.width - 80)
+  const h = Math.min(820, workAreaSize.height - 80)
+  win.setAlwaysOnTop(false)
+  win.setBounds({
+    x: Math.round((workAreaSize.width - w) / 2),
+    y: Math.round((workAreaSize.height - h) / 2),
+    width: w,
+    height: h,
+  })
+})
+
+// 收起为桌面组件：恢复右下角小窗 + 置顶悬浮
+ipcMain.on('win:collapse', () => {
+  if (!win) return
+  const { workAreaSize } = screen.getPrimaryDisplay()
+  const w = 480
+  const h = 360
+  win.setBounds({ x: workAreaSize.width - w - 24, y: workAreaSize.height - h - 24, width: w, height: h })
+  win.setAlwaysOnTop(true, 'floating')
+})

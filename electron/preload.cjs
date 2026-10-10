@@ -5,4 +5,7 @@ contextBridge.exposeInMainWorld('petlinkDesktop', {
   isElectron: true,
   close: () => ipcRenderer.send('mini:close'),
   toggleAlwaysOnTop: () => ipcRenderer.send('mini:toggle-top'),
+  // 展开为完整应用 / 收起为桌面组件（同一窗口，store 不重载）
+  expand: () => ipcRenderer.send('win:expand'),
+  collapse: () => ipcRenderer.send('win:collapse'),
 })

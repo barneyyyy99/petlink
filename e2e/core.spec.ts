@@ -143,6 +143,19 @@ test('桌面组件：从我的页和地图页均可打开下载选择', async ({
   await expect(page.getByTestId('desktop-dl-linux')).toBeVisible()
 })
 
+test('完整应用 ↔ 组件视图可在同一窗口互相切换', async ({ page }) => {
+  await gotoFresh(page)
+  // 完整应用 → 组件视图
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('mini-widget-btn').click()
+  await page.getByTestId('switch-to-widget').click()
+  await expect(page.getByTestId('mini-widget')).toBeVisible()
+  await expect(page.getByTestId('nav-home')).toHaveCount(0)
+  // 组件视图 → 完整应用（同一窗口，store 不丢）
+  await page.getByTestId('mini-expand').click({ force: true })
+  await expect(page.getByTestId('nav-home')).toBeVisible()
+})
+
 test('桌面组件仅显示 3D 房间与宠物（无边框/无其他元素）', async ({ page }) => {
   await page.goto('/?mini=1')
   // 只有 3D 房间 + 宠物

@@ -84,6 +84,8 @@ export type StoreState = {
 
   // ---- UI / 瞬态（不持久化） ----
   page: PageKey
+  /** 桌面组件/浮窗视图开关（与完整应用共享同一 store，可运行时切换、天然同步位置） */
+  widgetMode: boolean
   mapMode: MapMode
   modal: ModalKey
   drawerOpen: boolean
@@ -105,6 +107,8 @@ export type StoreState = {
   toast: (kind: ToastKind, text: string) => void
   dismissToast: (id: string) => void
   goPage: (page: PageKey) => void
+  setWidgetMode: (v: boolean) => void
+  toggleWidgetMode: () => void
   setMapMode: (mode: MapMode) => void
   openModal: (m: Exclude<ModalKey, null>) => void
   closeModal: () => void
@@ -244,6 +248,7 @@ export const useStore = create<StoreState>()(
       ...freshDomain(),
 
       page: 'home',
+      widgetMode: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mini') === '1',
       mapMode: 'live',
       modal: null,
       drawerOpen: false,
@@ -267,6 +272,8 @@ export const useStore = create<StoreState>()(
       },
       dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
       goPage: (page) => set({ page }),
+      setWidgetMode: (v) => set({ widgetMode: v }),
+      toggleWidgetMode: () => set((s) => ({ widgetMode: !s.widgetMode })),
       setMapMode: (mode) => set({ mapMode: mode }),
       openModal: (m) => set({ modal: m }),
       closeModal: () => set({ modal: null }),
@@ -577,6 +584,13 @@ export const useStore = create<StoreState>()(
 
 // 复杂时序动作（跨房间 / 接力 / 硬件指令 / 对话 / 铃铛 / 情绪 / 围栏告警）
 initComplexActions()
+
+// 同源多窗口（完整应用 ↔ 浏览器浮窗）实时同步：另一窗口写入持久化后，本窗口重新水合
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'petlink-store') void useStore.persist.rehydrate()
+  })
+}
 
 function initComplexActions() {
   const set = (patch: Partial<StoreState> | ((s: StoreState) => Partial<StoreState>)) =>
