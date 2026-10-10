@@ -15,12 +15,11 @@ export function HomePage() {
   const room = useStore(currentRoom)
   const goPage = useStore((s) => s.goPage)
   const openCamera = useStore((s) => s.openCamera)
+  const openModal = useStore((s) => s.openModal)
   const toggleDrawer = useStore((s) => s.toggleDrawer)
   const sendCommand = useStore((s) => s.sendCommand)
-  const turnOnAC = useStore((s) => s.turnOnAC)
   const events = useStore((s) => s.events)
   const home = useStore((s) => s.homeMap)
-  const rules = useStore((s) => s.rules)
   const moodSignal = useStore((s) => s.moodSignal)
   const diarySeed = useStore((s) => s.diarySeed)
   const regenerateDiary = useStore((s) => s.regenerateDiary)
@@ -39,9 +38,6 @@ export function HomePage() {
     }
   }
 
-  const env = room?.environment
-  const tempRule = rules.find((r) => r.trigger === 'temp_above' && r.enabled)
-  const tempHigh = env && tempRule && env.temperature >= (tempRule.threshold ?? 29)
   // 仅统计当前宠物的事件：首页所有卡片都围绕被选中的宠物
   const petEvents = eventsForPet(events, pet.id, pets[0]?.id)
   // 首页围绕“今天”：状态分 / 事件 / 日记只统计今日
@@ -155,7 +151,7 @@ export function HomePage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {/* 今日状态（移到右侧，尺寸与其它卡片一致） */}
           <div className="card">
             <div className="mb-3 flex items-center justify-between">
@@ -166,7 +162,7 @@ export function HomePage() {
               <b className="text-sm text-muted">{pet.name}今日状态分</b>
               <div className="text-5xl font-extrabold text-teal">{score}</div>
             </div>
-            <div className="mt-2 grid grid-cols-3 border-t border-line pt-2 text-center">
+            <div className="mt-1.5 grid grid-cols-3 border-t border-line pt-1.5 text-center">
               <div><b className="block text-lg">{sum.roomChanges}</b><span className="text-[11px] text-muted">跨房间</span></div>
               <div><b className="block text-lg">{sum.eats + sum.drinks}</b><span className="text-[11px] text-muted">进食/饮水</span></div>
               <div><b className="block text-lg">{sum.ownerInteractions}</b><span className="text-[11px] text-muted">远程陪伴</span></div>
@@ -174,21 +170,12 @@ export function HomePage() {
           </div>
 
           <div className="card">
-            <div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-bold">我的家</h3><button className="text-xs font-bold text-teal" onClick={() => goPage('map')}>进入地图 →</button></div>
-            <div className="flex items-start gap-3 rounded-2xl border border-[#e5ece7] bg-[#f4f8f5] p-3">
-              <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-2" />
-              <div><b className="text-sm">{pet.name}在 {room?.name}</b><p className="mt-1 text-xs text-muted">{env?.temperature.toFixed(1)}℃ · 湿度 {env?.humidity}% · {room?.devices.length ? '摄像头在线' : '项圈定位在线'}</p></div>
+            <div className="mb-2 flex items-center justify-between"><h3 className="text-lg font-bold">桌面组件</h3><span className="badge">● 可常驻</span></div>
+            <div className="flex items-center gap-3">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal-soft text-teal"><Icon name="desktop" size={18} /></div>
+              <p className="text-xs text-muted">把{pet.name}和它所在的 3D 房间放到桌面常驻，宠物实时移动；也可在本窗口切换组件视图。</p>
             </div>
-            {tempHigh && (
-              <div className="mt-2.5 flex items-start gap-3 rounded-2xl border border-[#f3dec8] bg-orange-soft p-4">
-                <div className="mt-1.5 h-2 w-2 rounded-full bg-orange" />
-                <div>
-                  <b className="text-sm">环境联动建议</b>
-                  <p className="mt-1 text-xs text-muted">{room?.name}当前 {env?.temperature.toFixed(1)}℃，建议开启空调至 26℃。</p>
-                  <div className="mt-2.5 flex gap-2"><button className="btn btn-primary" onClick={() => turnOnAC(room?.id)}>开启空调</button></div>
-                </div>
-              </div>
-            )}
+            <button className="btn btn-primary mt-2.5 w-full" data-testid="home-desktop-widget" onClick={() => openModal('desktopWidget')}>获取 / 使用桌面组件</button>
           </div>
 
           <div className="card">
