@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Point } from '@/domain/types'
 import { bounds, clampPoint, clone, rectPoints } from '@/domain/geometry'
-import { FURNITURE_META } from '@/components/map/furnitureLib'
+import { drawFurnitureCanvas } from '@/components/map/furnitureCanvas'
 import type { useMapEditor } from './useMapEditor'
 
 type Editor = ReturnType<typeof useMapEditor>
@@ -57,12 +57,17 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
         ctx.save()
         ctx.translate(cx, cy)
         ctx.rotate(((f.rotation ?? 0) * Math.PI) / 180)
-        ctx.fillStyle = on ? 'rgba(76,160,146,.28)' : 'rgba(170,195,186,.4)'
-        ctx.strokeStyle = on ? '#2e7f75' : '#9bb0a6'
-        ctx.lineWidth = on ? 3 : 1.6
-        ctx.beginPath(); ctx.rect(-f.w / 2, -f.h / 2, f.w, f.h); ctx.fill(); ctx.stroke()
-        ctx.fillStyle = '#45544e'; ctx.font = 'bold 13px sans-serif'
-        ctx.fillText(FURNITURE_META[f.type].label, -f.w / 2 + 5, -f.h / 2 + 16)
+        // 用家具对应图标造型绘制（俯视），而非纯矩形
+        ctx.save()
+        ctx.translate(-f.w / 2, -f.h / 2)
+        drawFurnitureCanvas(ctx, f.type, f.w, f.h)
+        ctx.restore()
+        // 选中/未选中的轮廓提示
+        ctx.strokeStyle = on ? '#2e7f75' : 'rgba(120,145,135,.55)'
+        ctx.lineWidth = on ? 3 : 1.4
+        if (on) { ctx.setLineDash([6, 4]) }
+        ctx.strokeRect(-f.w / 2, -f.h / 2, f.w, f.h)
+        ctx.setLineDash([])
         if (on) {
           ctx.fillStyle = '#2e7f75'
           ctx.beginPath(); ctx.rect(f.w / 2 - 7, f.h / 2 - 7, 14, 14); ctx.fill()

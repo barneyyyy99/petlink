@@ -186,17 +186,18 @@ export function useMapEditor() {
   }, [selected, snapshot, defaultFurniture])
   const addFurniture = useCallback((type: FurnitureType) => {
     if (selected < 0) return
+    const room = rooms[selected]
+    if (!room) return
     snapshot()
-    setRooms((rs) => rs.map((r, i) => {
-      if (i !== selected) return r
-      const b = bounds(r.polygon)
-      const meta = FURNITURE_META[type]
-      const list = (r.furniture ?? defaultFurniture(r)).slice()
-      list.push({ id: makeId('fn'), type, x: b.x + b.w / 2 - meta.w / 2, y: b.y + b.h / 2 - meta.h / 2, w: meta.w, h: meta.h })
-      setSelectedFurn(list.length - 1)
-      return { ...r, furniture: list }
-    }))
-  }, [selected, snapshot, defaultFurniture])
+    const b = bounds(room.polygon)
+    const meta = FURNITURE_META[type]
+    const list = (room.furniture ?? defaultFurniture(room)).slice()
+    const newIndex = list.length
+    list.push({ id: makeId('fn'), type, x: b.x + b.w / 2 - meta.w / 2, y: b.y + b.h / 2 - meta.h / 2, w: meta.w, h: meta.h })
+    // 纯函数式更新（不在 updater 内调用其它 setter，避免 StrictMode 双调用导致重复/错位）
+    setRooms((rs) => rs.map((r, i) => (i === selected ? { ...r, furniture: list } : r)))
+    setSelectedFurn(newIndex)
+  }, [selected, rooms, snapshot, defaultFurniture])
   const moveFurn = useCallback((furnIdx: number, x: number, y: number) => mutateFurn(furnIdx, (f) => ({ ...f, x, y }), false), [mutateFurn])
   const resizeFurn = useCallback((sx: number, sy: number) => {
     if (selectedFurn < 0) return
