@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { useAuth } from '@/store/useAuth'
+import { isCloudEnabled } from '@/lib/supabase'
 import { Room3D } from '@/components/map/Room3D'
 import { CameraFloat } from '@/components/map/CameraFloat'
+import { AuthModal } from '@/modals/AuthModal'
+import { Icon } from '@/components/Icon'
 
 /**
  * 桌面组件 / 浮窗模式（?mini=1 进入）：
@@ -17,6 +20,7 @@ export function MiniWidget() {
   const setWidgetMode = useStore((s) => s.setWidgetMode)
   const goPage = useStore((s) => s.goPage)
   const openCameraFloat = useStore((s) => s.openCameraFloat)
+  const openModal = useStore((s) => s.openModal)
   const cloudUser = useAuth((s) => s.user)
 
   useEffect(() => {
@@ -58,8 +62,18 @@ export function MiniWidget() {
           <Room3D room={room} pet={pet} style="cartoon" transparent showLabel={false} />
         </div>
       )}
-      {/* 悬停才出现的控制：看摄像头 / 展开完整应用 / 关闭。静止时只有 3D 房间与宠物 */}
+      {/* 悬停才出现的控制：账号/云同步 · 看摄像头 · 展开完整应用 · 关闭。静止时只有 3D 房间与宠物 */}
       <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+        <button
+          data-testid="mini-account"
+          aria-label="账号与云同步"
+          title={cloudUser ? `已登录 ${cloudUser.email}·多设备云同步` : isCloudEnabled ? '登录以多设备同步' : '云端未配置（本机本地模式）'}
+          onClick={() => openModal('auth')}
+          className="relative grid h-6 w-6 place-items-center rounded-full bg-black/35 text-white hover:bg-black/55"
+        >
+          <Icon name={cloudUser ? 'cloud' : 'login'} size={13} />
+          {cloudUser && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-white bg-teal" />}
+        </button>
         <button
           data-testid="mini-camera"
           aria-label="查看当前房间摄像头画面"
@@ -89,8 +103,22 @@ export function MiniWidget() {
         </button>
       </div>
 
+      {/* 未登录且已配置云端：底部常驻一个显眼的登录入口（解决"找不到登录入口"） */}
+      {isCloudEnabled && !cloudUser && (
+        <button
+          data-testid="mini-login-hint"
+          onClick={() => openModal('auth')}
+          className="app-no-drag absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold text-white shadow hover:bg-black/65"
+          title="登录同一账号即可与网页/其它设备同步"
+        >
+          <Icon name="login" size={12} /> 登录同步
+        </button>
+      )}
+
       {/* 摄像头观看浮窗（复用地图同款组件，直接看对应房间画面） */}
       <CameraFloat />
+      {/* 账号 / 云端同步弹层（组件内可直接登录，与网页端同账号即同步） */}
+      <AuthModal />
     </div>
   )
 }
