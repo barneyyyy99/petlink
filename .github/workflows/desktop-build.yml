@@ -31,3 +31,14 @@ jobs:
           # 在 GitHub 仓库 Settings → Secrets and variables → Actions 配置这两个 secret。
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+  # electron-builder 多平台并行发布会把 Release 留成草稿；所有平台构建完后统一转为正式版，
+  # 这样 /releases/latest 立即指向本次 tag，网页下载直链才生效。
+  publish-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark release as published (not draft)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --repo "${{ github.repository }}" --draft=false --latest

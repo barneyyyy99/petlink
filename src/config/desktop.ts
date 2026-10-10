@@ -9,7 +9,7 @@ export const DESKTOP_RELEASE = {
   owner: OWNER,
   repo: REPO,
   /** 首个安装包发布后置为 true：下载按钮改为直链下载，否则引导到发布页 */
-  published: false,
+  published: true,
   mac: `${BASE}/releases/latest/download/PetLink-Desktop-mac.dmg`,
   win: `${BASE}/releases/latest/download/PetLink-Desktop-win.exe`,
   linux: `${BASE}/releases/latest/download/PetLink-Desktop-linux.AppImage`,
