@@ -27,6 +27,15 @@ body {
 .app-no-drag {
   -webkit-app-region: no-drag;
 }
+/* 可拖拽窗口内，所有交互控件强制可点击（否则 Electron 拖拽区域会吞掉点击/输入） */
+.app-drag button,
+.app-drag a,
+.app-drag input,
+.app-drag textarea,
+.app-drag select,
+.app-drag label {
+  -webkit-app-region: no-drag;
+}
 
 /* 地图上可点击设备：轮廓白色线条闪烁提示 */
 @keyframes clickblink {

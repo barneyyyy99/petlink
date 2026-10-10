@@ -53,7 +53,7 @@ export function CameraFloat() {
     <div
       ref={cardRef}
       data-testid="camera-float"
-      className={`animate-fade absolute z-[11] w-[320px] overflow-hidden rounded-[20px] border border-[#dce6e1] bg-white/96 shadow-soft backdrop-blur ${
+      className={`app-no-drag animate-fade absolute z-[11] w-[320px] overflow-hidden rounded-[20px] border border-[#dce6e1] bg-white/96 shadow-soft backdrop-blur ${
         pos ? '' : 'left-6 top-6'
       }`}
       style={pos ? { left: pos.x, top: pos.y } : undefined}

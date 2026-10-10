@@ -30,7 +30,7 @@ export function Modal({
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(24,42,38,.28)] p-6 backdrop-blur-md"
+      className="app-no-drag fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(24,42,38,.28)] p-6 backdrop-blur-md"
       onClick={onClose}
     >
       <div
