@@ -62,8 +62,9 @@ export function MiniWidget() {
           <Room3D room={room} pet={pet} style="cartoon" transparent showLabel={false} />
         </div>
       )}
-      {/* 悬停才出现的控制：账号/云同步 · 看摄像头 · 展开完整应用 · 关闭。静止时只有 3D 房间与宠物 */}
-      <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+      {/* 控制：账号/云同步 · 看摄像头 · 展开完整应用 · 关闭。
+          常驻半透明（Electron 拖拽区域会吞掉 hover 事件，若依赖悬停则点不到），悬停更清晰 */}
+      <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-70 transition hover:opacity-100">
         <button
           data-testid="mini-account"
           aria-label="账号与云同步"
