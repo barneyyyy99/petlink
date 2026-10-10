@@ -69,7 +69,9 @@ export function DesktopWidgetModal() {
             先在浏览器里预览效果
           </button>
           <p className="text-[11px] leading-relaxed text-muted">
-            安装包未做签名，首次打开时 macOS 需在「系统设置 → 隐私与安全性」允许，Windows 在 SmartScreen 选「仍要运行」。
+            安装包未经签名。macOS 若提示「已损坏/无法打开」，把 app 拖进「应用程序」后，在「终端」执行一次
+            <code className="mx-1 rounded bg-[#eef3ef] px-1">xattr -cr "/Applications/PetLink 桌面组件.app"</code>
+            再打开即可（这是去掉下载隔离标记，不是真的损坏）。Windows 在 SmartScreen 选「仍要运行」。
           </p>
         </div>
       </div>

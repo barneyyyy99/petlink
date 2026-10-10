@@ -68,8 +68,12 @@
       }
     ],
     "mac": {
-      "target": "dmg",
+      "target": {
+        "target": "dmg",
+        "arch": "universal"
+      },
       "category": "public.app-category.lifestyle",
+      "identity": null,
       "artifactName": "PetLink-Desktop-mac.${ext}"
     },
     "win": {
