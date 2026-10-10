@@ -28,6 +28,15 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* 地图上可点击设备：轮廓白色线条闪烁提示 */
+@keyframes clickblink {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+.map-click-blink {
+  animation: clickblink 1.5s ease-in-out infinite;
+}
+
 @layer components {
   .card {
     @apply bg-white/95 border border-line rounded-3xl p-5 shadow-softsm;

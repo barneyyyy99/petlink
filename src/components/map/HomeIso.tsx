@@ -190,15 +190,25 @@ export function HomeIso() {
                   if (dev.type === 'camera') openCameraFloat(did)
                 }}
               >
-                {dev.type === 'camera' && <title>双击查看画面</title>}
+                {dev.type === 'camera' ? <title>双击查看画面（可点击设备）</title> : <title>可点击设备</title>}
                 <ellipse cx={0} cy={6} rx={16} ry={6} fill="rgba(30,50,44,.16)" style={{ pointerEvents: 'none' }} />
                 <rect x={-22} y={-26} width={44} height={56} fill="#000" fillOpacity={0} style={{ pointerEvents: 'all' }} />
                 <g transform="translate(0 -10) scale(1.2)" style={{ pointerEvents: 'none', filter: 'drop-shadow(0 2px 3px rgba(40,70,60,.22))' }}>
                   <DeviceGlyph type={dev.type} />
                 </g>
-                <text y={24} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
-                  {dev.name.replace(/^(客厅|卧室|书房|阳台|餐厅)/, '')}
-                </text>
+                {/* 可点击提示：轮廓用闪烁白色线条，不显示设备名 */}
+                <rect
+                  className="map-click-blink"
+                  x={-15}
+                  y={-23}
+                  width={30}
+                  height={34}
+                  rx={9}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={2.4}
+                  style={{ pointerEvents: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.85))' }}
+                />
                 {mapMode === 'devices' && (
                   <g style={{ pointerEvents: 'none' }}>
                     <rect x={-30} y={30} width={60} height={16} rx={8} fill="#fff" stroke={dev.online ? '#9fcabd' : '#e3aaa4'} strokeWidth={1} />

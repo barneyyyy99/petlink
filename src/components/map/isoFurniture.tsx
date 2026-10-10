@@ -12,6 +12,10 @@ const SCREEN = '#3c4a52'
 const GREEN = '#8bb49b'
 const APP = '#e3e9e6'
 const CERAMIC = '#d7ccba'
+const ACCENT = '#dd9159'      // 暖橙：靠背 / 坐垫点缀
+const ACCENT_SOFT = '#ecc19a' // 浅暖：抱枕
+const BLANKET = '#d98f6b'     // 床尾毯
+const LAMP = '#f4e6c3'        // 灯罩
 
 /** 等距立方体（左后两面受光较弱 → 右/前面加深），可选顶面描边 */
 function box(P: P, x0: number, y0: number, x1: number, y1: number, zb: number, zt: number, base: string, k: string, stroke = true) {
@@ -61,20 +65,22 @@ export function drawIsoFurniture(P: P, f: FurnitureItem, zb: number, unit: numbe
       parts.push(box(P, x0, y0, x1, y0 + h * 0.3, zb, U(0.6), FAB_D, `${id}-back`))
       parts.push(box(P, x0, y0 + h * 0.1, x0 + w * 0.15, y1, zb, U(0.46), FAB_D, `${id}-arml`))
       parts.push(box(P, x0 + w * 0.13, y0 + h * 0.28, x1 - w * 0.13, y1, zb, U(0.3), FAB, `${id}-seat`))
-      // 坐垫分隔
-      if (w > 160) parts.push(seg(P, [(x0 + x1) / 2, y0 + h * 0.3, U(0.3)], [(x0 + x1) / 2, y1, U(0.3)], `${id}-cs`))
+      // 抱枕点缀（暖色）
+      parts.push(box(P, x0 + w * 0.16, y0 + h * 0.34, x0 + w * 0.4, y0 + h * 0.62, U(0.3), U(0.46), ACCENT_SOFT, `${id}-cu1`))
+      parts.push(box(P, x1 - w * 0.4, y0 + h * 0.34, x1 - w * 0.16, y0 + h * 0.62, U(0.3), U(0.46), ACCENT, `${id}-cu2`))
       parts.push(box(P, x1 - w * 0.15, y0 + h * 0.1, x1, y1, zb, U(0.46), FAB_D, `${id}-armr`))
       break
     }
     case 'chair': {
-      parts.push(box(P, x0, y0, x1, y0 + h * 0.24, zb, U(0.82), FAB_D, `${id}-back`))
-      parts.push(box(P, x0, y0 + h * 0.2, x1, y1, zb, U(0.42), FAB, `${id}-seat`))
+      parts.push(box(P, x0, y0, x1, y0 + h * 0.24, zb, U(0.82), ACCENT, `${id}-back`))
+      parts.push(box(P, x0, y0 + h * 0.2, x1, y1, zb, U(0.42), WOOD, `${id}-seat`))
       break
     }
     case 'bed': {
       parts.push(box(P, x0, y0, x1, y0 + h * 0.1, zb, U(0.58), WOOD_D, `${id}-hb`)) // 床头板
       parts.push(box(P, x0, y0 + h * 0.08, x1, y1, zb, U(0.26), WHITE, `${id}-mat`)) // 床垫
       parts.push(box(P, x0, y0 + h * 0.42, x1, y1, U(0.26), U(0.32), DUVET, `${id}-duvet`)) // 被子
+      parts.push(box(P, x0, y1 - h * 0.16, x1, y1, U(0.26), U(0.36), BLANKET, `${id}-blanket`)) // 床尾毯
       parts.push(box(P, x0 + w * 0.08, y0 + h * 0.14, x0 + w * 0.44, y0 + h * 0.32, U(0.26), U(0.36), '#ffffff', `${id}-p1`)) // 枕
       parts.push(box(P, x0 + w * 0.56, y0 + h * 0.14, x0 + w * 0.92, y0 + h * 0.32, U(0.26), U(0.36), '#ffffff', `${id}-p2`))
       break
@@ -132,6 +138,9 @@ export function drawIsoFurniture(P: P, f: FurnitureItem, zb: number, unit: numbe
     case 'nightstand': {
       parts.push(box(P, x0, y0, x1, y1, zb, U(0.4), WOOD, `${id}-b`))
       parts.push(seg(P, [x0 + w * 0.15, y1, U(0.22)], [x1 - w * 0.15, y1, U(0.22)], `${id}-dr`))
+      // 台灯：灯座 + 灯罩
+      parts.push(box(P, x0 + w * 0.4, y0 + h * 0.32, x0 + w * 0.52, y0 + h * 0.5, U(0.4), U(0.6), WOOD_D, `${id}-lp`))
+      parts.push(box(P, x0 + w * 0.3, y0 + h * 0.24, x0 + w * 0.62, y0 + h * 0.56, U(0.6), U(0.78), LAMP, `${id}-ls`))
       break
     }
     case 'cat_tree': {
