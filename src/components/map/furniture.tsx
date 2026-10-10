@@ -19,12 +19,12 @@ export function deviceIconOf(type: DeviceType): string {
 export const WALL = '#aebbb4'
 export function floorColor(kind: Room['kind']): string {
   switch (kind) {
-    case 'living': return '#f4ede0'
-    case 'bedroom': return '#efeaf0'
-    case 'study': return '#e9eff0'
-    case 'dining': return '#f1ebe1'
-    case 'balcony': return '#ece3d0'
-    default: return '#f2f5f1'
+    case 'living': return '#f0e6d3'
+    case 'bedroom': return '#efe7e2'
+    case 'study': return '#eceee6'
+    case 'dining': return '#efe7d6'
+    case 'balcony': return '#ebe0cc'
+    default: return '#f0f2ec'
   }
 }
 

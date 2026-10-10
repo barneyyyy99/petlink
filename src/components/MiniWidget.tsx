@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
+import { useAuth } from '@/store/useAuth'
 import { Room3D } from '@/components/map/Room3D'
 
 /**
@@ -13,16 +14,18 @@ export function MiniWidget() {
   const setMapMode = useStore((s) => s.setMapMode)
   const simulateNextRoom = useStore((s) => s.simulateNextRoom)
   const setWidgetMode = useStore((s) => s.setWidgetMode)
+  const cloudUser = useAuth((s) => s.user)
 
   useEffect(() => {
     setMapMode('live')
   }, [setMapMode])
 
-  // 让宠物周期性在房间之间走动，组件内实时呈现
+  // 自动溜达：仅在未登录云同步时演示；登录后位置以云端真实/同步数据为准，避免多设备互相覆盖乱跳
   useEffect(() => {
+    if (cloudUser) return
     const t = setInterval(() => simulateNextRoom(), 16000)
     return () => clearInterval(t)
-  }, [simulateNextRoom])
+  }, [simulateNextRoom, cloudUser])
 
   // 展开为完整应用：同一窗口切换（共享 store，位置天然同步）
   const expand = () => {

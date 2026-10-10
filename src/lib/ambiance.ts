@@ -24,5 +24,5 @@ export function ambianceFor(hour: number): Ambiance {
     return { bg: '#f4f7f3', tint: '#ffffff', tintOpacity: 0, glow: '#fffbe9', glowOpacity: 0.28, night: false, label: '白天' }
   if (h >= 17 && h < 20)
     return { bg: '#efe4da', tint: '#ff9d5c', tintOpacity: 0.16, glow: '#ffe0ab', glowOpacity: 0.5, night: false, label: '傍晚' }
-  return { bg: '#223542', tint: '#152536', tintOpacity: 0.4, glow: '#ffe6a0', glowOpacity: 0.8, night: true, label: '夜间' }
+  return { bg: '#2b3e4d', tint: '#17283a', tintOpacity: 0.28, glow: '#ffe6a0', glowOpacity: 0.85, night: true, label: '夜间' }
 }

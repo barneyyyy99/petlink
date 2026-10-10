@@ -278,16 +278,26 @@ export function LiveMap({ defaultView = 'iso', showToggle = true }: { defaultVie
                         if (dev.type === 'camera') openCameraFloat(did)
                       }}
                     >
-                      {dev.type === 'camera' && <title>双击查看画面</title>}
-                      {/* 透明命中区：让整块设备（图标+名称）可点，图标本身 pointerEvents:none */}
+                      {dev.type === 'camera' ? <title>双击查看画面（可点击设备）</title> : <title>可点击设备</title>}
+                      {/* 透明命中区：让整块设备可点，图标本身 pointerEvents:none */}
                       <rect x={-22} y={-20} width={44} height={60} fill="#000" fillOpacity={0} style={{ pointerEvents: 'all' }} />
                       {/* 直接用设备本身形象，不加圆框 */}
                       <g transform="scale(1.25)" style={{ pointerEvents: 'none', filter: 'drop-shadow(0 2px 3px rgba(40,70,60,.22))' }}>
                         <DeviceGlyph type={dev.type} />
                       </g>
-                      <text y={34} fontSize={11} fontWeight={700} textAnchor="middle" fill="#5d726a" style={{ pointerEvents: 'none' }}>
-                        {dev.name.replace(/^(客厅|卧室|书房|阳台|餐厅)/, '')}
-                      </text>
+                      {/* 可点击提示：轮廓用闪烁白色线条，不显示设备名 */}
+                      <rect
+                        className="map-click-blink"
+                        x={-16}
+                        y={-17}
+                        width={32}
+                        height={34}
+                        rx={9}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeWidth={2.4}
+                        style={{ pointerEvents: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.85))' }}
+                      />
                       {/* 设备模式：图标下方显示在线/离线与关键状态 */}
                       {mapMode === 'devices' && (
                         <g style={{ pointerEvents: 'none' }}>
