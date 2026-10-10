@@ -15,6 +15,7 @@ export function MiniWidget() {
   const setMapMode = useStore((s) => s.setMapMode)
   const simulateNextRoom = useStore((s) => s.simulateNextRoom)
   const setWidgetMode = useStore((s) => s.setWidgetMode)
+  const goPage = useStore((s) => s.goPage)
   const openCameraFloat = useStore((s) => s.openCameraFloat)
   const cloudUser = useAuth((s) => s.user)
 
@@ -29,31 +30,26 @@ export function MiniWidget() {
     return () => clearInterval(t)
   }, [simulateNextRoom, cloudUser])
 
-  // 展开为完整应用：同一窗口切换（共享 store，位置天然同步）
+  // 展开为完整应用：退出组件视图并进入完整地图（Electron 下同时放大窗口）
   const expand = () => {
     setWidgetMode(false)
+    goPage('map')
     const desktop = (window as unknown as { petlinkDesktop?: { expand?: () => void } }).petlinkDesktop
-    if (desktop?.expand) {
-      desktop.expand()
-      return
-    }
-    // 浏览器：去掉 ?mini 参数并尝试全屏
-    try {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('mini')
-      window.history.replaceState(null, '', url.toString())
-    } catch { /* noop */ }
-    document.documentElement.requestFullscreen?.().catch(() => {})
+    desktop?.expand?.()
   }
 
+  // 关闭：Electron 独立组件窗口 → 关窗；脚本打开的浮窗 → 关窗；主窗口内切换过来的 → 退回完整应用（不关整个软件）
   const exit = () => {
     const desktop = (window as unknown as { petlinkDesktop?: { close: () => void } }).petlinkDesktop
     if (desktop?.close) {
       desktop.close()
       return
     }
-    window.close()
-    window.location.href = window.location.pathname
+    if (window.opener) {
+      window.close()
+      return
+    }
+    setWidgetMode(false)
   }
 
   return (

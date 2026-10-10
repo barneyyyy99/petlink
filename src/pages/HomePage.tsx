@@ -84,9 +84,9 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="mt-5 grid grid-cols-[minmax(0,1.4fr)_minmax(320px,.76fr)] gap-5 max-[1000px]:grid-cols-1">
-        <div>
-          <div className="relative min-h-[288px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#2b8176] to-[#4b9c8e] p-7 text-white shadow-soft">
+      <div className="mt-4 grid grid-cols-[minmax(0,1.4fr)_minmax(320px,.76fr)] gap-5 max-[1000px]:grid-cols-1">
+        <div className="flex flex-col gap-4">
+          <div className="relative flex-1 min-h-[288px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#2b8176] to-[#4b9c8e] p-7 text-white shadow-soft">
             <div className="eyebrow text-white/70">今日守护对象</div>
             {/* 宠物名 + 其右侧的实时状态 */}
             <div className="my-3 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -144,7 +144,7 @@ export function HomePage() {
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-3.5 max-[640px]:grid-cols-1">
+          <div className="grid grid-cols-3 gap-3.5 max-[640px]:grid-cols-1">
             <QuickCard icon="feed" bg="bg-orange-soft text-orange" title="投喂" sub="8g · 2 次" onClick={() => sendCommand(useStore.getState().devices.find((d) => d.type === 'feeder')?.id ?? pet.id, '远程投喂 8g')} />
             <QuickCard icon="find" bg="bg-teal-soft text-teal" title="寻宠" sub="灯光 + 声音" onClick={() => { goPage('map'); toggleDrawer(true); useStore.getState().toast('info', '已开启寻宠模式：灯光 + 声音') }} />
             <QuickCard icon="peek" bg="bg-blue-soft text-blue" title="看一眼" sub={`${room?.name} · 在线`} onClick={() => openCamera()} />
