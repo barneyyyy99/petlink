@@ -154,9 +154,15 @@ test('完整应用 ↔ 组件视图可在同一窗口互相切换，组件内可
   await page.getByTestId('mini-camera').click({ force: true })
   await expect(page.getByTestId('camera-float')).toBeVisible()
   await page.getByTestId('camera-float-close').click()
-  // 组件视图 → 完整应用（同一窗口，store 不丢）
+  // 关闭(×) = 关闭地图视图回到完整应用（不退出程序）
+  await page.getByTestId('mini-exit').click({ force: true })
+  await expect(page.getByTestId('nav-home')).toBeVisible()
+  // 再次进入组件，放大(⤢) → 完整应用的地图页
+  await page.getByTestId('home-desktop-widget').click()
+  await page.getByTestId('switch-to-widget').click()
   await page.getByTestId('mini-expand').click({ force: true })
   await expect(page.getByTestId('nav-home')).toBeVisible()
+  await expect(page.getByTestId('home-iso-svg').or(page.getByTestId('live-map-svg'))).toBeVisible()
 })
 
 test('桌面组件仅显示 3D 房间与宠物（无边框/无其他元素）', async ({ page }) => {

@@ -30,7 +30,7 @@ export function MiniWidget() {
     return () => clearInterval(t)
   }, [simulateNextRoom, cloudUser])
 
-  // 展开为完整应用：退出组件视图并进入完整地图（Electron 下同时放大窗口）
+  // 展开为完整应用：退出组件视图并进入完整地图（Electron 下把窗口放大为正常应用窗口）
   const expand = () => {
     setWidgetMode(false)
     goPage('map')
@@ -38,18 +38,17 @@ export function MiniWidget() {
     desktop?.expand?.()
   }
 
-  // 关闭：Electron 独立组件窗口 → 关窗；脚本打开的浮窗 → 关窗；主窗口内切换过来的 → 退回完整应用（不关整个软件）
+  // 关闭 = 关闭地图/组件视图，回到完整应用本身（不退出整个程序）
   const exit = () => {
-    const desktop = (window as unknown as { petlinkDesktop?: { close: () => void } }).petlinkDesktop
-    if (desktop?.close) {
-      desktop.close()
-      return
-    }
+    // 脚本打开的预览浮窗（有 opener）→ 关掉这个临时窗口
     if (window.opener) {
       window.close()
       return
     }
+    // Electron 主窗口 / 网页主窗口内切换过来的 → 退回完整应用，不关程序
     setWidgetMode(false)
+    const desktop = (window as unknown as { petlinkDesktop?: { expand?: () => void } }).petlinkDesktop
+    desktop?.expand?.()
   }
 
   return (
@@ -81,7 +80,8 @@ export function MiniWidget() {
         </button>
         <button
           data-testid="mini-exit"
-          aria-label="关闭桌面组件"
+          aria-label="关闭地图，返回应用"
+          title="关闭，返回完整应用"
           onClick={exit}
           className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-white hover:bg-black/55"
         >
