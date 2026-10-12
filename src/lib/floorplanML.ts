@@ -11,7 +11,9 @@ import type { Point } from '@/domain/types'
  * 失败时抛错，调用方回退到启发式识别。
  */
 
-const MODEL_URL = '/models/floorplan.int8.onnx'
+// 资源前缀：Web 构建为 '/'，Electron 构建为 './'（file:// 相对加载），两端都能取到模型与 wasm
+const BASE = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')
+const MODEL_URL = `${BASE}models/floorplan.int8.onnx`
 const S = 512
 const MEAN = [0.485, 0.456, 0.406]
 const STD = [0.229, 0.224, 0.225]
@@ -20,7 +22,7 @@ let sessionP: Promise<ort.InferenceSession> | null = null
 
 function getSession(): Promise<ort.InferenceSession> {
   if (!sessionP) {
-    ort.env.wasm.wasmPaths = '/ort/'
+    ort.env.wasm.wasmPaths = `${BASE}ort/`
     ort.env.wasm.numThreads = 1 // 单线程，免去跨源隔离(COOP/COEP)要求
     sessionP = ort.InferenceSession.create(MODEL_URL, {
       executionProviders: ['wasm'],
