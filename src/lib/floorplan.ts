@@ -34,10 +34,11 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
   const isWall = new Uint8Array(N)
   for (let i = 0; i < N; i++) isWall[i] = gray[i] < thr ? 1 : 0
 
-  // 形态学膨胀：封堵门洞/墙体缝隙，避免 flood fill 从门口漏到相邻房间或室外，
-  // 否则大房间会和走廊/室外连成一片而被当作外部丢弃（真实户型图常见）。
+  // 先用形态学"开运算"去掉细线噪声（尺寸标注线/文字/水印/细家具线），只留较粗的墙；
+  // 再膨胀封门洞，避免 flood fill 从门口漏到相邻房间或室外。
+  const opened = dilate(erode(isWall, GW, GH, 1), GW, GH, 1)
   const DIL = 2
-  const wall = dilate(isWall, GW, GH, DIL)
+  const wall = dilate(opened, GW, GH, DIL)
 
   // 连通域（4 邻接）标记非墙像素
   const label = new Int32Array(N).fill(-1)
@@ -123,6 +124,27 @@ function otsu(hist: number[], total: number): number {
     if (v > maxVar) { maxVar = v; thr = t }
   }
   return thr
+}
+
+function erode(mask: Uint8Array, GW: number, GH: number, iters: number): Uint8Array {
+  // 腐蚀：越界视为"墙"，避免贴边的真实墙被腐蚀掉
+  let cur = mask
+  for (let k = 0; k < iters; k++) {
+    const nx = new Uint8Array(cur.length)
+    for (let y = 0; y < GH; y++) {
+      for (let x = 0; x < GW; x++) {
+        const i = y * GW + x
+        if (!cur[i]) { nx[i] = 0; continue }
+        const up = y > 0 ? cur[i - GW] : 1
+        const dn = y < GH - 1 ? cur[i + GW] : 1
+        const lf = x > 0 ? cur[i - 1] : 1
+        const rt = x < GW - 1 ? cur[i + 1] : 1
+        nx[i] = (up && dn && lf && rt) ? 1 : 0
+      }
+    }
+    cur = nx
+  }
+  return cur
 }
 
 function dilate(mask: Uint8Array, GW: number, GH: number, iters: number): Uint8Array {
