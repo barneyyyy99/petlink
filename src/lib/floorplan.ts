@@ -21,12 +21,18 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
   const { data } = ctx.getImageData(0, 0, GW, GH)
 
   const N = GW * GH
-  const isWall = new Uint8Array(N)
+  const gray = new Uint8Array(N)
+  const hist = new Array(256).fill(0)
   for (let i = 0; i < N; i++) {
     const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2], a = data[i * 4 + 3]
-    const lum = 0.299 * r + 0.587 * g + 0.114 * b
-    isWall[i] = a > 40 && lum < 125 ? 1 : 0
+    const lum = a > 40 ? ((0.299 * r + 0.587 * g + 0.114 * b) | 0) : 255
+    gray[i] = lum
+    hist[lum]++
   }
+  // Otsu 自适应阈值（钳制到合理区间）；深色像素(<thr)视为墙，适配不同底图
+  const thr = Math.max(70, Math.min(190, otsu(hist, N)))
+  const isWall = new Uint8Array(N)
+  for (let i = 0; i < N; i++) isWall[i] = gray[i] < thr ? 1 : 0
 
   // 连通域（4 邻接）标记非墙像素
   const label = new Int32Array(N).fill(-1)
@@ -71,18 +77,19 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
   rooms.sort((a, b) => b.area - a.area)
   rooms = rooms.slice(0, 16)
 
-  const scale = Math.min(MAP_W / GW, MAP_H / GH)
-  const offx = (MAP_W - GW * scale) / 2
-  const offy = (MAP_H - GH * scale) / 2
-  const inset = 6
+  // 与编辑器底图绘制保持一致：底图被拉伸铺满 MAP_W×MAP_H，这里也按"拉伸"映射，
+  // 保证识别出的房间与底图完全对齐（之前用等比居中导致错位）。
+  const sx = MAP_W / GW
+  const sy = MAP_H / GH
+  const inset = 5
 
   const polys: Point[][] = []
   for (const c of rooms) {
-    const x = offx + c.minx * scale + inset
-    const y = offy + c.miny * scale + inset
-    const w = (c.maxx - c.minx + 1) * scale - inset * 2
-    const h = (c.maxy - c.miny + 1) * scale - inset * 2
-    if (w < 36 || h < 28) continue // 过窄的可能是走廊/误检，跳过
+    const x = c.minx * sx + inset
+    const y = c.miny * sy + inset
+    const w = (c.maxx - c.minx + 1) * sx - inset * 2
+    const h = (c.maxy - c.miny + 1) * sy - inset * 2
+    if (w < 30 || h < 24) continue // 过窄的可能是走廊/误检，跳过
     polys.push([
       { x: Math.round(x), y: Math.round(y) },
       { x: Math.round(x + w), y: Math.round(y) },
@@ -91,6 +98,24 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
     ])
   }
   return polys
+}
+
+function otsu(hist: number[], total: number): number {
+  let sum = 0
+  for (let t = 0; t < 256; t++) sum += t * hist[t]
+  let sumB = 0, wB = 0, maxVar = -1, thr = 127
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t]
+    if (wB === 0) continue
+    const wF = total - wB
+    if (wF === 0) break
+    sumB += t * hist[t]
+    const mB = sumB / wB
+    const mF = (sum - sumB) / wF
+    const v = wB * wF * (mB - mF) * (mB - mF)
+    if (v > maxVar) { maxVar = v; thr = t }
+  }
+  return thr
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

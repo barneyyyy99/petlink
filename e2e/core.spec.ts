@@ -413,13 +413,24 @@ test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
 })
 
 test('户型图上传：应用后持久化为底图 + 重开可见预览', async ({ page }) => {
-  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
   await gotoFresh(page)
+  const dataUrl = await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 400; c.height = 300
+    const x = c.getContext('2d') as CanvasRenderingContext2D
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 400, 300)
+    x.strokeStyle = '#000'; x.lineWidth = 8
+    x.strokeRect(20, 20, 360, 260)
+    x.beginPath(); x.moveTo(200, 20); x.lineTo(200, 280); x.stroke()
+    x.beginPath(); x.moveTo(20, 150); x.lineTo(380, 150); x.stroke()
+    return c.toDataURL('image/png')
+  })
+  const buf = Buffer.from(dataUrl.split(',')[1], 'base64')
   await page.getByTestId('nav-map').click()
   await page.getByTestId('edit-map-btn').click()
   await expect(page.getByTestId('map-builder-modal')).toBeVisible()
   await page.getByRole('button', { name: '上传户型' }).click()
-  await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
+  await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: buf })
+  await expect.poll(async () => await page.getByTestId('room-row').count(), { timeout: 8000 }).toBeGreaterThanOrEqual(3)
   await page.getByTestId('apply-map').click()
   await expect(page.getByTestId('map-builder-modal')).toBeHidden()
   const bg = await page.evaluate(() => {

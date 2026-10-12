@@ -78,7 +78,8 @@ export function MapBuilderModal() {
     try {
       const polys = await detectRoomsFromImage(src)
       if (!polys.length) {
-        toast('warn', '未能自动识别到房间，请在“手绘户型”手动描画')
+        editor.load([]) // 清掉默认房间，避免错位矩形盖在底图上，便于照底图手绘
+        toast('warn', '未能自动识别到房间，请在“手绘户型”照着底图手绘')
         setTab('draw')
         return
       }
