@@ -110,13 +110,13 @@ export function MapBuilderModal() {
 
       {tab === 'upload' && (
         <div>
-          <button onClick={() => fileRef.current?.click()} className="flex min-h-[220px] w-full flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-[#cedbd5] bg-[#f7faf8] p-6 text-center">
+          <button data-testid="upload-floorplan-btn" onClick={() => fileRef.current?.click()} className="flex min-h-[220px] w-full flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-[#cedbd5] bg-[#f7faf8] p-6 text-center">
             <div className="text-4xl">⌗</div>
             <b className="mt-2">上传家庭户型图</b>
             <p className="text-xs text-muted">支持 JPG / PNG（≤8MB）。上传后进入手绘校准房间。</p>
-            {bgImage && <img src={bgImage.src} alt="户型图预览" className="mt-3 max-h-40 rounded-xl" />}
+            {bgImage && <img src={bgImage.src} alt="户型图预览" data-testid="floorplan-preview" className="mt-3 max-h-40 rounded-xl" />}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
+          <input ref={fileRef} type="file" accept="image/*" data-testid="upload-floorplan-input" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
         </div>
       )}
 
