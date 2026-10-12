@@ -13,3 +13,6 @@ test-results
 .env
 .env.*
 !.env.example
+
+# 户型识别调参生成的截图产物
+e2e/fixtures/_detect-result.png

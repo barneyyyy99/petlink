@@ -10,8 +10,8 @@ import type { Point } from '@/domain/types'
  */
 export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> {
   const img = await loadImage(dataUrl)
-  const GW = 240
-  const GH = Math.max(60, Math.min(240, Math.round((GW * img.height) / img.width)))
+  const GW = 320
+  const GH = Math.max(80, Math.min(360, Math.round((GW * img.height) / img.width)))
   const canvas = document.createElement('canvas')
   canvas.width = GW
   canvas.height = GH
@@ -29,16 +29,18 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
     gray[i] = lum
     hist[lum]++
   }
-  // Otsu 自适应阈值（钳制到合理区间）；深色像素(<thr)视为墙，适配不同底图
+  // Otsu 自适应阈值（钳制到合理区间）；深色像素(<thr)视为墙，适配不同底图。
+  // 真实户型图里墙是黑色实线，水印/浅灰文字在阈值以上会被当作地面(不构成屏障)。
   const thr = Math.max(70, Math.min(190, otsu(hist, N)))
   const isWall = new Uint8Array(N)
   for (let i = 0; i < N; i++) isWall[i] = gray[i] < thr ? 1 : 0
 
-  // 先用形态学"开运算"去掉细线噪声（尺寸标注线/文字/水印/细家具线），只留较粗的墙；
-  // 再膨胀封门洞，避免 flood fill 从门口漏到相邻房间或室外。
-  const opened = dilate(erode(isWall, GW, GH, 1), GW, GH, 1)
-  const DIL = 2
-  const wall = dilate(opened, GW, GH, DIL)
+  // 关键：对墙做形态学"闭运算"(先膨胀再腐蚀) 封住门洞/缺口，又基本不改变墙体厚度，
+  // 避免 flood fill 从门口把相邻房间或室外连成一片。
+  // 不做"开运算"——真实图降采样后墙本就很细，腐蚀会把墙整条抹掉导致识别不到任何房间。
+  const SEAL = Math.max(3, Math.round(GW / 70)) // 封门洞半径（随网格自适应，约封 2*SEAL 像素的缺口）
+  const wall = erode(dilate(isWall, GW, GH, SEAL), GW, GH, SEAL)
+  const EXP = 1 // 闭运算基本不改变墙位，外接矩形只需少量回扩贴合墙内沿
 
   // 连通域（4 邻接）标记非墙像素
   const label = new Int32Array(N).fill(-1)
@@ -88,16 +90,19 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
 
   const polys: Point[][] = []
   for (const c of rooms) {
-    // 膨胀会让房间内缩，这里把外接矩形按膨胀量回扩，更贴合真实墙内尺寸
-    const gx0 = Math.max(0, c.minx - DIL)
-    const gy0 = Math.max(0, c.miny - DIL)
-    const gx1 = Math.min(GW - 1, c.maxx + DIL)
-    const gy1 = Math.min(GH - 1, c.maxy + DIL)
+    // 外接矩形少量回扩，贴合墙内沿
+    const gx0 = Math.max(0, c.minx - EXP)
+    const gy0 = Math.max(0, c.miny - EXP)
+    const gx1 = Math.min(GW - 1, c.maxx + EXP)
+    const gy1 = Math.min(GH - 1, c.maxy + EXP)
     const x = gx0 * sx + 3
     const y = gy0 * sy + 3
     const w = (gx1 - gx0 + 1) * sx - 6
     const h = (gy1 - gy0 + 1) * sy - 6
     if (w < 26 || h < 22) continue // 过小的可能是壁橱/误检，跳过
+    // 过滤细长条：双层外墙/阳台栏杆之间的夹缝常被误判成房间
+    const long = Math.max(w, h), short = Math.min(w, h)
+    if (short < 46 && long / short > 3.6) continue
     polys.push([
       { x: Math.round(x), y: Math.round(y) },
       { x: Math.round(x + w), y: Math.round(y) },
