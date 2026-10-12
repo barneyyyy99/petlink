@@ -29,17 +29,20 @@ export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> 
     gray[i] = lum
     hist[lum]++
   }
-  // Otsu 自适应阈值（钳制到合理区间）；深色像素(<thr)视为墙，适配不同底图。
-  // 真实户型图里墙是黑色实线，水印/浅灰文字在阈值以上会被当作地面(不构成屏障)。
+  // Otsu 自适应阈值（钳制到合理区间）；深色像素(<thr)视为"黑墨"（墙+家具+标注线+文字）。
   const thr = Math.max(70, Math.min(190, otsu(hist, N)))
-  const isWall = new Uint8Array(N)
-  for (let i = 0; i < N; i++) isWall[i] = gray[i] < thr ? 1 : 0
+  const dark = new Uint8Array(N)
+  for (let i = 0; i < N; i++) dark[i] = gray[i] < thr ? 1 : 0
 
-  // 关键：对墙做形态学"闭运算"(先膨胀再腐蚀) 封住门洞/缺口，又基本不改变墙体厚度，
+  // 以"墙壁为边缘"：墙体是贯穿全屋、相互连通的黑色骨架；而沙发/床/文字/尺寸标注线
+  // 都是漂浮在房间内部、彼此独立的小块黑墨。取黑墨的最大连通块(及其同量级的大块)
+  // 作为墙骨架，丢掉其余所有家具/文字噪声——这样房间不会被室内家具切碎。
+  const skeleton = wallSkeleton(dark, GW, GH)
+
+  // 对墙骨架做形态学"闭运算"(先膨胀再腐蚀) 封住门洞/缺口，基本不改变墙位，
   // 避免 flood fill 从门口把相邻房间或室外连成一片。
-  // 不做"开运算"——真实图降采样后墙本就很细，腐蚀会把墙整条抹掉导致识别不到任何房间。
   const SEAL = Math.max(3, Math.round(GW / 70)) // 封门洞半径（随网格自适应，约封 2*SEAL 像素的缺口）
-  const wall = erode(dilate(isWall, GW, GH, SEAL), GW, GH, SEAL)
+  const wall = erode(dilate(skeleton, GW, GH, SEAL), GW, GH, SEAL)
   const EXP = 1 // 闭运算基本不改变墙位，外接矩形只需少量回扩贴合墙内沿
 
   // 连通域（4 邻接）标记非墙像素
@@ -131,8 +134,45 @@ function otsu(hist: number[], total: number): number {
   return thr
 }
 
+// 墙骨架：取"黑墨"的最大 8-连通块(及与之同量级的大块)作为墙，丢弃漂浮的家具/文字噪声。
+// 以墙为房间边缘，室内家具不再把房间切碎。
+function wallSkeleton(dark: Uint8Array, GW: number, GH: number): Uint8Array {
+  const N = GW * GH
+  const label = new Int32Array(N).fill(-1)
+  const sizes: number[] = []
+  const stack: number[] = []
+  for (let s = 0; s < N; s++) {
+    if (!dark[s] || label[s] !== -1) continue
+    const id = sizes.length
+    let area = 0
+    stack.length = 0
+    stack.push(s); label[s] = id
+    while (stack.length) {
+      const p = stack.pop() as number
+      area++
+      const x = p % GW, y = (p / GW) | 0
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue
+        const nx = x + dx, ny = y + dy
+        if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue
+        const q = ny * GW + nx
+        if (dark[q] && label[q] === -1) { label[q] = id; stack.push(q) }
+      }
+    }
+    sizes.push(area)
+  }
+  if (sizes.length === 0) return dark
+  let maxA = 0
+  for (const a of sizes) if (a > maxA) maxA = a
+  // 保留最大块及其同量级的大块(≥15% 最大块)，兜住墙骨架被门洞断成两大段的情况
+  const keep = new Uint8Array(sizes.length)
+  for (let i = 0; i < sizes.length; i++) keep[i] = sizes[i] >= maxA * 0.15 ? 1 : 0
+  const out = new Uint8Array(N)
+  for (let i = 0; i < N; i++) if (label[i] >= 0 && keep[label[i]]) out[i] = 1
+  return out
+}
+
 function erode(mask: Uint8Array, GW: number, GH: number, iters: number): Uint8Array {
-  // 腐蚀：越界视为"墙"，避免贴边的真实墙被腐蚀掉
   let cur = mask
   for (let k = 0; k < iters; k++) {
     const nx = new Uint8Array(cur.length)
