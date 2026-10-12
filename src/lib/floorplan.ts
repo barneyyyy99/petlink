@@ -2,13 +2,36 @@ import { MAP_W, MAP_H } from '@/domain/geometry'
 import type { Point } from '@/domain/types'
 
 /**
- * 从户型图自动识别房间（客户端轻量 CV）：
+ * 户型房间识别入口：优先用深度模型(onnxruntime-web，本地推理，按墙精确分房间)，
+ * 失败或模型不可用时回退到轻量启发式识别。模型以动态 import 懒加载，避免把
+ * onnxruntime 打进主包。
+ */
+export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> {
+  const noML = (globalThis as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML
+  if (!noML) {
+    try {
+      const { detectRoomsML } = await import('./floorplanML')
+      const polys = await detectRoomsML(dataUrl)
+      if (polys.length) return polys
+      // 模型未识别到房间时回退启发式再试
+    } catch (e) {
+      if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
+        // eslint-disable-next-line no-console
+        console.warn('[FP] ML detect failed, fallback to heuristic:', e)
+      }
+    }
+  }
+  return detectRoomsHeuristic(dataUrl)
+}
+
+/**
+ * 从户型图自动识别房间（客户端轻量 CV，回退方案）：
  * 1) 缩小到网格并二值化：深色线条视为墙(barrier)，其余为可通行区域；
  * 2) 对非墙像素做连通域标记，排除贴边的外部背景，保留被墙围住的"房间"连通域；
  * 3) 每个房间取外接矩形，按比例映射回地图坐标，内缩避开墙体。
  * 返回房间多边形（地图坐标）列表。识别不到返回空数组。
  */
-export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> {
+export async function detectRoomsHeuristic(dataUrl: string): Promise<Point[][]> {
   const img = await loadImage(dataUrl)
   const GW = 320
   const GH = Math.max(80, Math.min(360, Math.round((GW * img.height) / img.width)))

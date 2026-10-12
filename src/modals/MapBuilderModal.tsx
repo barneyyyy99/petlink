@@ -76,6 +76,8 @@ export function MapBuilderModal() {
     if (!src) return toast('warn', '请先上传户型图')
     setDetecting(true)
     try {
+      const { isMLReady } = await import('@/lib/floorplanML')
+      if (!isMLReady()) toast('info', '首次使用正在下载 AI 识别模型（约 25MB，仅需一次）…')
       const polys = await detectRoomsFromImage(src)
       if (!polys.length) {
         editor.load([]) // 清掉默认房间，避免错位矩形盖在底图上，便于照底图手绘

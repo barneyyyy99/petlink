@@ -16,3 +16,5 @@ test-results
 
 # 户型识别调参生成的截图产物
 e2e/fixtures/_detect-result.png
+e2e/fixtures/_mask-*.png
+e2e/fixtures/_ml-*.png

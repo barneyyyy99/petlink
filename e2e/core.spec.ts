@@ -390,6 +390,7 @@ test('宠物气泡“看看它”复用同一摄像头浮窗（看最近摄像�
 
 test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
   await gotoFresh(page)
+  await page.evaluate(() => { (window as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML = true })
   // 浏览器内合成一张"井字"户型图（外墙 + 中线十字 = 4 个房间）
   const dataUrl = await page.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 400; c.height = 300
@@ -414,6 +415,7 @@ test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
 
 test('户型图上传：应用后持久化为底图 + 重开可见预览', async ({ page }) => {
   await gotoFresh(page)
+  await page.evaluate(() => { (window as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML = true })
   const dataUrl = await page.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 400; c.height = 300
     const x = c.getContext('2d') as CanvasRenderingContext2D
