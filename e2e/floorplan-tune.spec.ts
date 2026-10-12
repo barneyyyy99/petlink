@@ -51,6 +51,21 @@ test('户型识别调参：真实户型图识别结果诊断', async ({ page }) 
     await canvas.first().screenshot({ path: path.join(FIX, '_detect-result.png') })
     // eslint-disable-next-line no-console
     console.log(`[floorplan-tune] 已保存墙体参考层叠加截图 -> e2e/fixtures/_detect-result.png`)
+
+    // 模拟"拖拽画房间"验证吸附：在画布中部斜拉一个矩形，截图看是否贴齐墙线
+    await page.getByRole('button', { name: '拖拽画房间' }).click().catch(() => {})
+    const box = await canvas.first().boundingBox()
+    if (box) {
+      const x0 = box.x + box.width * 0.42, y0 = box.y + box.height * 0.5
+      const x1 = box.x + box.width * 0.62, y1 = box.y + box.height * 0.82
+      await page.mouse.move(x0, y0); await page.mouse.down()
+      await page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, { steps: 5 })
+      await page.mouse.move(x1, y1, { steps: 5 }); await page.mouse.up()
+      await page.waitForTimeout(300)
+      await canvas.first().screenshot({ path: path.join(FIX, '_snap-test.png') })
+      // eslint-disable-next-line no-console
+      console.log('[floorplan-tune] 已保存吸附测试截图 -> e2e/fixtures/_snap-test.png')
+    }
   }
 
   expect(await canvas.count()).toBeGreaterThan(0)

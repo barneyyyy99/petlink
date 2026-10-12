@@ -18,3 +18,4 @@ test-results
 e2e/fixtures/_detect-result.png
 e2e/fixtures/_mask-*.png
 e2e/fixtures/_ml-*.png
+e2e/fixtures/_snap-test.png
