@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { useAuth } from '@/store/useAuth'
 import { isCloudEnabled } from '@/lib/supabase'
@@ -6,6 +6,15 @@ import { Room3D } from '@/components/map/Room3D'
 import { CameraFloat } from '@/components/map/CameraFloat'
 import { AuthModal } from '@/modals/AuthModal'
 import { Icon } from '@/components/Icon'
+import { PetSvg } from '@/components/PetSvg'
+import { behaviorBadge, behaviorColor, behaviorLabel } from '@/lib/tracking'
+
+const behaviorAnimClass: Record<string, string> = {
+  sleeping: 'pet-sleep',
+  running: 'pet-run',
+  playing: 'pet-play',
+  eating: 'pet-eat',
+}
 
 /**
  * 桌面组件 / 浮窗模式（?mini=1 进入）：
@@ -22,6 +31,17 @@ export function MiniWidget() {
   const openCameraFloat = useStore((s) => s.openCameraFloat)
   const openModal = useStore((s) => s.openModal)
   const cloudUser = useAuth((s) => s.user)
+
+  // 显示模式：room = 地图+宠物（3D 房间）；pet = 仅宠物形象（支持上传动图）。记忆到本机。
+  const [view, setView] = useState<'room' | 'pet'>(() =>
+    typeof localStorage !== 'undefined' && localStorage.getItem('petlink-widget-view') === 'pet' ? 'pet' : 'room',
+  )
+  const toggleView = () =>
+    setView((v) => {
+      const nv = v === 'room' ? 'pet' : 'room'
+      try { localStorage.setItem('petlink-widget-view', nv) } catch { /* noop */ }
+      return nv
+    })
 
   useEffect(() => {
     setMapMode('live')
@@ -62,14 +82,49 @@ export function MiniWidget() {
 
   return (
     <div className="group app-drag relative h-screen w-screen overflow-hidden bg-transparent" data-testid="mini-widget">
-      {room && (
+      {view === 'room' && room && (
         <div className="absolute inset-0" data-testid="mini-3d-room">
           <Room3D room={room} pet={pet} style="cartoon" transparent showLabel={false} />
         </div>
       )}
-      {/* 控制：账号/云同步 · 看摄像头 · 展开完整应用 · 关闭。
+      {view === 'pet' && (
+        <div className="absolute inset-0 grid place-items-center p-3" data-testid="mini-pet-only">
+          <div className="relative grid place-items-center">
+            {pet.photo ? (
+              <img
+                src={pet.photo}
+                alt={pet.name}
+                className={`max-h-[76vh] max-w-[86vw] object-contain drop-shadow-[0_14px_26px_rgba(40,60,55,.3)] ${behaviorAnimClass[pet.behavior] ?? ''}`}
+              />
+            ) : (
+              <div className={`grid h-[200px] w-[200px] place-items-center rounded-[32px] bg-[#fff8e9] shadow-soft ${behaviorAnimClass[pet.behavior] ?? ''}`}>
+                <PetSvg behavior={pet.behavior} size={176} />
+              </div>
+            )}
+            <span
+              className="pointer-events-none absolute -right-1 -top-1 inline-flex items-center gap-1 rounded-full border-2 border-white bg-white px-2 py-0.5 text-[11px] font-bold shadow"
+              style={{ color: behaviorColor[pet.behavior], boxShadow: `0 0 0 2px ${behaviorColor[pet.behavior]}` }}
+            >
+              {behaviorBadge[pet.behavior]} {behaviorLabel[pet.behavior]}
+            </span>
+            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/70 bg-white/90 px-2.5 py-0.5 text-[12px] font-bold text-[#3f5a51] shadow-softsm">
+              {pet.name}
+            </span>
+          </div>
+        </div>
+      )}
+      {/* 控制：切换显示模式 · 账号/云同步 · 看摄像头 · 展开完整应用 · 关闭。
           常驻半透明（Electron 拖拽区域会吞掉 hover 事件，若依赖悬停则点不到），悬停更清晰 */}
       <div className="app-no-drag absolute right-2 top-2 flex gap-1.5 opacity-70 transition hover:opacity-100">
+        <button
+          data-testid="mini-mode-toggle"
+          aria-label="切换显示模式"
+          title={view === 'room' ? '切换为：仅宠物' : '切换为：地图+宠物'}
+          onClick={toggleView}
+          className="grid h-6 w-6 place-items-center rounded-full bg-black/35 text-[13px] text-white hover:bg-black/55"
+        >
+          {view === 'room' ? '🐾' : '🗺'}
+        </button>
         <button
           data-testid="mini-account"
           aria-label="账号与云同步"

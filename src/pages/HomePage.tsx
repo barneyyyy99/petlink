@@ -30,11 +30,21 @@ export function HomePage() {
     if (!file) return
     try {
       const raw = await blobToDataUrl(file)
-      const small = await downscaleDataUrl(raw, 480, 0.82)
-      setPetPhoto(pet.id, small)
-      toast('success', `已更新${pet.name}的照片`)
+      // 动图（GIF/APNG/WebP）保留原图以保持动画；静态图降采样省空间
+      const animated = /gif|apng/.test(file.type) || (file.type === 'image/webp')
+      if (animated) {
+        if (raw.length > 2_600_000) {
+          toast('warn', '动图过大（建议 <2MB），请压缩后再上传')
+          return
+        }
+        setPetPhoto(pet.id, raw)
+      } else {
+        const small = await downscaleDataUrl(raw, 480, 0.82)
+        setPetPhoto(pet.id, small)
+      }
+      toast('success', `已更新${pet.name}的形象`)
     } catch {
-      toast('error', '照片读取失败，请换一张')
+      toast('error', '图片读取失败，请换一张')
     }
   }
 
