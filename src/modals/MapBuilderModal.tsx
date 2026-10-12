@@ -5,11 +5,9 @@ import { EditorCanvas } from './EditorCanvas'
 import { InspectorPanel } from './InspectorPanel'
 import { useMapEditor } from './useMapEditor'
 import { seedHomeMap } from '@/domain/seed'
-import { clone, makeId } from '@/domain/geometry'
+import { clone } from '@/domain/geometry'
 import { downscaleDataUrl } from '@/lib/image'
-import { detectRoomsFromImage } from '@/lib/floorplan'
 import { FURNITURE_PALETTE, FURNITURE_META } from '@/components/map/furnitureLib'
-import type { Room } from '@/domain/types'
 
 type Tab = 'upload' | 'draw' | 'scan' | 'bind'
 const MAX_IMG = 8 * 1024 * 1024
@@ -25,9 +23,11 @@ export function MapBuilderModal() {
   const [tab, setTab] = useState<Tab>('draw')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgDataUrl, setBgDataUrl] = useState<string | undefined>(undefined)
+  const [wallOverlay, setWallOverlay] = useState<HTMLImageElement | null>(null)
   const [mapName, setMapName] = useState(homeMap.name)
   const [scanPct, setScanPct] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const rawRef = useRef<string | null>(null)
   const scanTimer = useRef<number | null>(null)
   const [detecting, setDetecting] = useState(false)
 
@@ -45,6 +45,7 @@ export function MapBuilderModal() {
       } else {
         setBgImage(null)
       }
+      setWallOverlay(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -56,45 +57,36 @@ export function MapBuilderModal() {
     const reader = new FileReader()
     reader.onload = async () => {
       const raw = reader.result as string
+      rawRef.current = raw
       // 降采样后作为底图，随快照云端同步
       const scaled = await downscaleDataUrl(raw, 1280, 0.72)
       const img = new Image()
       img.onload = () => setBgImage(img)
       img.src = scaled
       setBgDataUrl(scaled)
-      toast('info', '户型图已载入，正在自动识别房间…')
-      // 上传后自动识别墙体生成房间
-      await autoDetect(scaled)
+      setWallOverlay(null)
+      toast('info', '户型图已载入，正在识别墙体…')
+      // 识别用原图(高保真，墙线更完整)，底图仍用降采样图
+      await detectWalls(raw)
     }
     reader.onerror = () => toast('error', '图片读取失败，请重试')
     reader.readAsDataURL(file)
   }
 
-  // 自动识别墙体 → 生成矩形房间（初步结果，供手绘校准）
-  const autoDetect = async (dataUrl?: string) => {
-    const src = dataUrl ?? bgDataUrl
+  // 识别墙体 → 生成"墙体参考层"叠在底图上（去除家具/文字），供照着快速框选房间
+  const detectWalls = async (dataUrl?: string) => {
+    const src = dataUrl ?? rawRef.current ?? bgDataUrl
     if (!src) return toast('warn', '请先上传户型图')
     setDetecting(true)
     try {
-      const { isMLReady } = await import('@/lib/floorplanML')
+      const { detectWallsOverlay, isMLReady } = await import('@/lib/floorplanML')
       if (!isMLReady()) toast('info', '首次使用正在下载 AI 识别模型（约 25MB，仅需一次）…')
-      const polys = await detectRoomsFromImage(src)
-      if (!polys.length) {
-        editor.load([]) // 清掉默认房间，避免错位矩形盖在底图上，便于照底图手绘
-        toast('warn', '未能自动识别到房间，请在“手绘户型”照着底图手绘')
-        setTab('draw')
-        return
-      }
-      const rooms: Room[] = polys.map((polygon, i) => ({
-        id: makeId('room'),
-        name: `房间${i + 1}`,
-        kind: 'custom',
-        polygon,
-        devices: [],
-        environment: { temperature: 24, humidity: 55, updatedAt: Date.now() },
-      }))
-      editor.load(rooms)
-      toast('success', `已自动识别 ${rooms.length} 个房间，请在“手绘户型”校准顶点并命名`)
+      const { url } = await detectWallsOverlay(src)
+      const img = new Image()
+      img.onload = () => setWallOverlay(img)
+      img.src = url
+      editor.load([]) // 清掉默认房间，便于照墙体参考层手绘
+      toast('success', '已标出墙体（绿色参考层，已去除家具/文字）。到“手绘户型”照着拖拽框选房间即可')
       setTab('draw')
     } catch {
       toast('error', '识别失败，请换一张更清晰的户型图')
@@ -102,6 +94,8 @@ export function MapBuilderModal() {
       setDetecting(false)
     }
   }
+
+  // 空间扫描（演示）：进度条动画
 
   const startScan = () => {
     if (scanTimer.current) window.clearInterval(scanTimer.current)
@@ -155,11 +149,11 @@ export function MapBuilderModal() {
           </button>
           <input ref={fileRef} type="file" accept="image/*" data-testid="upload-floorplan-input" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
           {bgDataUrl && (
-            <button data-testid="auto-detect-rooms" className="btn btn-primary mt-3 w-full" disabled={detecting} onClick={() => autoDetect()}>
-              {detecting ? '识别中…' : '✨ 重新自动识别房间'}
+            <button data-testid="auto-detect-rooms" className="btn btn-primary mt-3 w-full" disabled={detecting} onClick={() => detectWalls()}>
+              {detecting ? '识别中…' : '✨ 重新识别墙体参考层'}
             </button>
           )}
-          <p className="mt-2 text-[11px] leading-relaxed text-muted">上传后会自动识别墙体生成矩形房间（初步结果）。请到“手绘户型”校准顶点、命名后应用；深色墙线越清晰识别越准。</p>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted">上传后用 AI 识别墙体，叠成绿色“墙体参考层”（已去除家具/文字/标注干扰）。到“手绘户型”照着参考层用“拖拽画房间”快速框选、命名后应用。模型在本机运行，图片不外传。</p>
         </div>
       )}
 
@@ -204,7 +198,7 @@ export function MapBuilderModal() {
                 )}
               </div>
             )}
-            <EditorCanvas editor={editor} bgImage={bgImage} />
+            <EditorCanvas editor={editor} bgImage={bgImage} wallOverlay={wallOverlay} />
             <div className="mt-2 flex gap-1.5">
               <button className="btn" disabled={editor.polyDraft.length < 3} onClick={() => editor.finishPoly()}>完成当前自由形状</button>
               <button className="btn" onClick={() => editor.setPolyDraft([])}>取消形状</button>

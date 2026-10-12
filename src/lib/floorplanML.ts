@@ -38,7 +38,10 @@ export function isMLReady(): boolean {
   return sessionP !== null
 }
 
-export async function detectRoomsML(dataUrl: string): Promise<Point[][]> {
+type WallMask = { wall: Uint8Array; left: number; top: number; iw: number; ih: number }
+
+/** 跑模型得到墙屏障掩码(墙|门|窗)，512 letterbox 空间，inner 区域对应整张原图。 */
+async function runWallMask(dataUrl: string): Promise<WallMask> {
   const img = await loadImage(dataUrl)
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
@@ -69,37 +72,80 @@ export async function detectRoomsML(dataUrl: string): Promise<Point[][]> {
 
   const session = await getSession()
   const tensor = new ort.Tensor('float32', input, [1, 3, S, S])
-  const feeds: Record<string, ort.Tensor> = { [session.inputNames[0]]: tensor }
-  const out = await session.run(feeds)
+  const out = await session.run({ [session.inputNames[0]]: tensor })
   const logits = out[session.outputNames[0]].data as Float32Array // (1,4,512,512)
 
-  // argmax → 墙屏障掩码(墙|门)。门是墙上的开口，纳入屏障以封住房间。
+  // argmax → 墙屏障掩码(墙|门|窗)。
   const wall = new Uint8Array(plane)
   for (let i = 0; i < plane; i++) {
     let best = 0, bv = logits[i]
     for (let k = 1; k < 4; k++) { const v = logits[k * plane + i]; if (v > bv) { bv = v; best = k } }
-    if (best === 1 || best === 2) wall[i] = 1
+    if (best >= 1) wall[i] = 1
   }
-  closeMask(wall, S, S, 2) // 轻度闭运算封住发丝级缺口
+  closeMask(wall, S, S, 2) // 封住发丝级断口
+  return { wall, left, top, iw, ih }
+}
 
+/**
+ * 识别墙体并生成"墙体参考层"图：把模型识别到的墙(已去除家具/文字/标注/水印)画成
+ * 半透明高亮层，尺寸与原图等比，叠在编辑器底图上供用户照着快速框选房间。
+ * 返回 PNG dataURL 及其像素宽高(= letterbox inner 尺寸，等比于原图)。
+ */
+export async function detectWallsOverlay(dataUrl: string): Promise<{ url: string; width: number; height: number }> {
+  const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
+  const c = document.createElement('canvas')
+  c.width = iw
+  c.height = ih
+  const ctx = c.getContext('2d')
+  if (!ctx) throw new Error('no 2d ctx')
+  const im = ctx.createImageData(iw, ih)
+  for (let y = 0; y < ih; y++) {
+    for (let x = 0; x < iw; x++) {
+      const src = (top + y) * S + (left + x)
+      const di = (y * iw + x) * 4
+      if (wall[src]) {
+        im.data[di] = 22; im.data[di + 1] = 125; im.data[di + 2] = 109; im.data[di + 3] = 235 // 墨绿墙线
+      } else {
+        im.data[di + 3] = 0 // 透明
+      }
+    }
+  }
+  ctx.putImageData(im, 0, 0)
+  return { url: c.toDataURL('image/png'), width: iw, height: ih }
+}
+
+export async function detectRoomsML(dataUrl: string): Promise<Point[][]> {
+  const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
+  if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
+    let wc = 0; for (let i = 0; i < wall.length; i++) wc += wall[i]
+    ;(globalThis as unknown as { __FP_MLWALL?: unknown }).__FP_MLWALL = { S, wall, left, top, iw, ih }
+    // eslint-disable-next-line no-console
+    console.log(`[FP] ML wall px=${wc} inner=${iw}x${ih} left=${left} top=${top}`)
+  }
   return extractRooms(wall, left, top, iw, ih)
 }
 
-/** 在 inner 区域内对"地面"做连通域，排除贴 inner 边的室外背景，返回房间矩形(地图坐标)。 */
+/**
+ * 从干净的墙掩码里提取房间矩形。模型墙里没有家具，所以用"矩形生长"：以地面点为种子，
+ * 向四周扩张，直到某条边多半是墙(撞上贯穿墙)或越界才停。墙线上的小断口/门洞只占边线
+ * 一小段，不会使生长停下，于是矩形严格以墙为界、能跨过门洞缺口与家具，得到完整房间。
+ */
 function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, ih: number): Point[][] {
-  // inner 之外一律当墙，让室外背景单独成域并被排除
+  // 封门洞：把墙膨胀一圈，桥接门口/墙线断口，让每个房间成为被墙完全围住的独立连通域。
+  const SEAL = Math.max(3, Math.round(Math.min(iw, ih) / 90))
+  const sealed = morph(wall, S, S, SEAL, true)
   const inWall = (x: number, y: number) => {
     if (x < left || y < top || x >= left + iw || y >= top + ih) return true
-    return wall[y * S + x] === 1
+    return sealed[y * S + x] === 1
   }
   const label = new Int32Array(S * S).fill(-1)
   type Comp = { minx: number; miny: number; maxx: number; maxy: number; area: number; border: boolean }
   const comps: Comp[] = []
   const stack: number[] = []
-  for (let y0 = top; y0 < top + ih; y0++) {
-    for (let x0 = left; x0 < left + iw; x0++) {
-      const s = y0 * S + x0
-      if (inWall(x0, y0) || label[s] !== -1) continue
+  for (let yy = top; yy < top + ih; yy++) {
+    for (let xx = left; xx < left + iw; xx++) {
+      const s = yy * S + xx
+      if (inWall(xx, yy) || label[s] !== -1) continue
       const id = comps.length
       stack.length = 0
       stack.push(s); label[s] = id
@@ -121,22 +167,29 @@ function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, i
   }
 
   const innerArea = iw * ih
-  const minArea = innerArea * 0.004
-  const maxArea = innerArea * 0.6
-  let rooms = comps.filter((c) => !c.border && c.area >= minArea && c.area <= maxArea)
-  if (rooms.length === 0) rooms = comps.filter((c) => c.area >= minArea && c.area <= maxArea)
+  const minArea = innerArea * 0.006
+  const maxArea = innerArea * 0.5
+  const exterior = comps.slice().sort((a, b) => b.area - a.area)[0]
+  let rooms = comps.filter((c) => c !== exterior && !c.border && c.area >= minArea && c.area <= maxArea)
+  if (rooms.length === 0) rooms = comps.filter((c) => c !== exterior && c.area >= minArea && c.area <= maxArea)
   rooms.sort((a, b) => b.area - a.area)
   rooms = rooms.slice(0, 24)
+  if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log(`[FP] ML comps=${comps.length} seal=${SEAL} extArea=${exterior?.area} rooms=${rooms.length} top5=${comps.slice().sort((a,b)=>b.area-a.area).slice(0,5).map(c=>c.area).join(',')}`)
+  }
 
-  // inner 像素 → 地图坐标(底图在编辑器中拉伸铺满 MAP_W×MAP_H)
+  // 膨胀封门让房间内缩，回扩 SEAL 贴回真实墙内沿
   const sx = MAP_W / iw
   const sy = MAP_H / ih
   const polys: Point[][] = []
   for (const c of rooms) {
-    const x = (c.minx - left) * sx + 3
-    const y = (c.miny - top) * sy + 3
-    const wpx = (c.maxx - c.minx + 1) * sx - 6
-    const hpx = (c.maxy - c.miny + 1) * sy - 6
+    const gx0 = Math.max(left, c.minx - SEAL), gy0 = Math.max(top, c.miny - SEAL)
+    const gx1 = Math.min(left + iw - 1, c.maxx + SEAL), gy1 = Math.min(top + ih - 1, c.maxy + SEAL)
+    const x = (gx0 - left) * sx + 3
+    const y = (gy0 - top) * sy + 3
+    const wpx = (gx1 - gx0 + 1) * sx - 6
+    const hpx = (gy1 - gy0 + 1) * sy - 6
     if (wpx < 20 || hpx < 18) continue
     polys.push([
       { x: Math.round(x), y: Math.round(y) },

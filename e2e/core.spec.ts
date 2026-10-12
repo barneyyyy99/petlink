@@ -388,10 +388,9 @@ test('宠物气泡“看看它”复用同一摄像头浮窗（看最近摄像�
   await expect(page.getByTestId('camera-float')).toHaveCount(1)
 })
 
-test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
+test('户型图上传：生成墙体参考层并进入手绘', async ({ page }) => {
   await gotoFresh(page)
-  await page.evaluate(() => { (window as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML = true })
-  // 浏览器内合成一张"井字"户型图（外墙 + 中线十字 = 4 个房间）
+  // 浏览器内合成一张"井字"户型图
   const dataUrl = await page.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 400; c.height = 300
     const x = c.getContext('2d') as CanvasRenderingContext2D
@@ -407,15 +406,13 @@ test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
   await page.getByTestId('edit-map-btn').click()
   await page.getByRole('button', { name: '上传户型' }).click()
   await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: buf })
-  // 自动识别后进入手绘页并列出多个房间
-  await expect
-    .poll(async () => await page.getByTestId('room-row').count(), { timeout: 8000 })
-    .toBeGreaterThanOrEqual(3)
+  // 上传后底图预览立即可见，并进入手绘页
+  await expect(page.getByTestId('floorplan-preview')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('editor-canvas')).toBeVisible({ timeout: 60000 })
 })
 
 test('户型图上传：应用后持久化为底图 + 重开可见预览', async ({ page }) => {
   await gotoFresh(page)
-  await page.evaluate(() => { (window as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML = true })
   const dataUrl = await page.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 400; c.height = 300
     const x = c.getContext('2d') as CanvasRenderingContext2D
@@ -432,7 +429,10 @@ test('户型图上传：应用后持久化为底图 + 重开可见预览', async
   await expect(page.getByTestId('map-builder-modal')).toBeVisible()
   await page.getByRole('button', { name: '上传户型' }).click()
   await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: buf })
-  await expect.poll(async () => await page.getByTestId('room-row').count(), { timeout: 8000 }).toBeGreaterThanOrEqual(3)
+  await expect(page.getByTestId('floorplan-preview')).toBeVisible({ timeout: 5000 })
+  // 识别完成后自动进入手绘页；加一个房间后再应用
+  await expect(page.getByTestId('editor-canvas')).toBeVisible({ timeout: 60000 })
+  await page.getByRole('button', { name: '＋ 房间' }).click()
   await page.getByTestId('apply-map').click()
   await expect(page.getByTestId('map-builder-modal')).toBeHidden()
   const bg = await page.evaluate(() => {

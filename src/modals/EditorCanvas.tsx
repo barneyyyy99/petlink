@@ -6,7 +6,7 @@ import type { useMapEditor } from './useMapEditor'
 
 type Editor = ReturnType<typeof useMapEditor>
 
-export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTMLImageElement | null }) {
+export function EditorCanvas({ editor, bgImage, wallOverlay }: { editor: Editor; bgImage: HTMLImageElement | null; wallOverlay?: HTMLImageElement | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drag = useRef<{ action: 'rect' | 'move' | 'vertex' | 'furn' | 'furnresize' | null; start: Point; originPoly?: Point[]; vertex: number; furnIdx?: number; ox?: number; oy?: number }>({ action: null, start: { x: 0, y: 0 }, vertex: -1 })
   const tempRect = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -31,6 +31,13 @@ export function EditorCanvas({ editor, bgImage }: { editor: Editor; bgImage: HTM
       ctx.save()
       ctx.globalAlpha = 0.3
       ctx.drawImage(bgImage, 0, 0, W, H)
+      ctx.restore()
+    }
+    // 墙体参考层（模型识别，已去除家具/文字）——拉伸铺满，与底图对齐
+    if (wallOverlay && wallOverlay.complete && wallOverlay.naturalWidth) {
+      ctx.save()
+      ctx.globalAlpha = 0.9
+      ctx.drawImage(wallOverlay, 0, 0, W, H)
       ctx.restore()
     }
     ctx.strokeStyle = '#e4ebe7'

@@ -8,20 +8,21 @@ import type { Point } from '@/domain/types'
  */
 export async function detectRoomsFromImage(dataUrl: string): Promise<Point[][]> {
   const noML = (globalThis as unknown as { __FP_NO_ML?: boolean }).__FP_NO_ML
+  const dbg = (globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG
   if (!noML) {
     try {
       const { detectRoomsML } = await import('./floorplanML')
       const polys = await detectRoomsML(dataUrl)
+      if (dbg) console.log(`[FP] ML path OK, rooms=${polys.length}`) // eslint-disable-line no-console
       if (polys.length) return polys
-      // 模型未识别到房间时回退启发式再试
     } catch (e) {
-      if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
-        // eslint-disable-next-line no-console
-        console.warn('[FP] ML detect failed, fallback to heuristic:', e)
-      }
+      // eslint-disable-next-line no-console
+      if (dbg) console.warn('[FP] ML detect FAILED, fallback to heuristic:', e)
     }
   }
-  return detectRoomsHeuristic(dataUrl)
+  const h = await detectRoomsHeuristic(dataUrl)
+  if (dbg) console.log(`[FP] heuristic path, rooms=${h.length}`) // eslint-disable-line no-console
+  return h
 }
 
 /**
