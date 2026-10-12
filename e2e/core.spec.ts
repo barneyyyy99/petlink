@@ -388,7 +388,31 @@ test('宠物气泡“看看它”复用同一摄像头浮窗（看最近摄像�
   await expect(page.getByTestId('camera-float')).toHaveCount(1)
 })
 
-test('户型图上传：载入提示 + 应用后持久化为底图 + 重开可见预览', async ({ page }) => {
+test('户型图上传：自动识别墙体生成房间', async ({ page }) => {
+  await gotoFresh(page)
+  // 浏览器内合成一张"井字"户型图（外墙 + 中线十字 = 4 个房间）
+  const dataUrl = await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 400; c.height = 300
+    const x = c.getContext('2d') as CanvasRenderingContext2D
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 400, 300)
+    x.strokeStyle = '#000'; x.lineWidth = 8
+    x.strokeRect(20, 20, 360, 260)
+    x.beginPath(); x.moveTo(200, 20); x.lineTo(200, 280); x.stroke()
+    x.beginPath(); x.moveTo(20, 150); x.lineTo(380, 150); x.stroke()
+    return c.toDataURL('image/png')
+  })
+  const buf = Buffer.from(dataUrl.split(',')[1], 'base64')
+  await page.getByTestId('nav-map').click()
+  await page.getByTestId('edit-map-btn').click()
+  await page.getByRole('button', { name: '上传户型' }).click()
+  await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: buf })
+  // 自动识别后进入手绘页并列出多个房间
+  await expect
+    .poll(async () => await page.getByTestId('room-row').count(), { timeout: 8000 })
+    .toBeGreaterThanOrEqual(3)
+})
+
+test('户型图上传：应用后持久化为底图 + 重开可见预览', async ({ page }) => {
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
   await gotoFresh(page)
   await page.getByTestId('nav-map').click()
@@ -396,14 +420,12 @@ test('户型图上传：载入提示 + 应用后持久化为底图 + 重开可�
   await expect(page.getByTestId('map-builder-modal')).toBeVisible()
   await page.getByRole('button', { name: '上传户型' }).click()
   await page.getByTestId('upload-floorplan-input').setInputFiles({ name: 'plan.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
-  await expect(page.getByTestId('toast')).toContainText('户型图已载入', { timeout: 5000 })
   await page.getByTestId('apply-map').click()
   await expect(page.getByTestId('map-builder-modal')).toBeHidden()
   const bg = await page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem('petlink-store') || '{}')?.state?.homeMap?.backgroundImage || '' } catch { return '' }
   })
   expect(bg.startsWith('data:image')).toBeTruthy()
-  // 重新打开编辑器 → 上传 tab → 已存底图作为预览加载出来
   await page.getByTestId('edit-map-btn').click()
   await page.getByRole('button', { name: '上传户型' }).click()
   await expect(page.getByTestId('floorplan-preview')).toBeVisible({ timeout: 5000 })

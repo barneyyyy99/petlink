@@ -5,9 +5,11 @@ import { EditorCanvas } from './EditorCanvas'
 import { InspectorPanel } from './InspectorPanel'
 import { useMapEditor } from './useMapEditor'
 import { seedHomeMap } from '@/domain/seed'
-import { clone } from '@/domain/geometry'
+import { clone, makeId } from '@/domain/geometry'
 import { downscaleDataUrl } from '@/lib/image'
+import { detectRoomsFromImage } from '@/lib/floorplan'
 import { FURNITURE_PALETTE, FURNITURE_META } from '@/components/map/furnitureLib'
+import type { Room } from '@/domain/types'
 
 type Tab = 'upload' | 'draw' | 'scan' | 'bind'
 const MAX_IMG = 8 * 1024 * 1024
@@ -27,6 +29,7 @@ export function MapBuilderModal() {
   const [scanPct, setScanPct] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
   const scanTimer = useRef<number | null>(null)
+  const [detecting, setDetecting] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -59,11 +62,42 @@ export function MapBuilderModal() {
       img.onload = () => setBgImage(img)
       img.src = scaled
       setBgDataUrl(scaled)
-      toast('success', '户型图已载入，请在“手绘户型”上逐个校准房间后应用')
-      setTab('draw')
+      toast('info', '户型图已载入，正在自动识别房间…')
+      // 上传后自动识别墙体生成房间
+      await autoDetect(scaled)
     }
     reader.onerror = () => toast('error', '图片读取失败，请重试')
     reader.readAsDataURL(file)
+  }
+
+  // 自动识别墙体 → 生成矩形房间（初步结果，供手绘校准）
+  const autoDetect = async (dataUrl?: string) => {
+    const src = dataUrl ?? bgDataUrl
+    if (!src) return toast('warn', '请先上传户型图')
+    setDetecting(true)
+    try {
+      const polys = await detectRoomsFromImage(src)
+      if (!polys.length) {
+        toast('warn', '未能自动识别到房间，请在“手绘户型”手动描画')
+        setTab('draw')
+        return
+      }
+      const rooms: Room[] = polys.map((polygon, i) => ({
+        id: makeId('room'),
+        name: `房间${i + 1}`,
+        kind: 'custom',
+        polygon,
+        devices: [],
+        environment: { temperature: 24, humidity: 55, updatedAt: Date.now() },
+      }))
+      editor.load(rooms)
+      toast('success', `已自动识别 ${rooms.length} 个房间，请在“手绘户型”校准顶点并命名`)
+      setTab('draw')
+    } catch {
+      toast('error', '识别失败，请换一张更清晰的户型图')
+    } finally {
+      setDetecting(false)
+    }
   }
 
   const startScan = () => {
@@ -117,6 +151,12 @@ export function MapBuilderModal() {
             {bgImage && <img src={bgImage.src} alt="户型图预览" data-testid="floorplan-preview" className="mt-3 max-h-40 rounded-xl" />}
           </button>
           <input ref={fileRef} type="file" accept="image/*" data-testid="upload-floorplan-input" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
+          {bgDataUrl && (
+            <button data-testid="auto-detect-rooms" className="btn btn-primary mt-3 w-full" disabled={detecting} onClick={() => autoDetect()}>
+              {detecting ? '识别中…' : '✨ 重新自动识别房间'}
+            </button>
+          )}
+          <p className="mt-2 text-[11px] leading-relaxed text-muted">上传后会自动识别墙体生成矩形房间（初步结果）。请到“手绘户型”校准顶点、命名后应用；深色墙线越清晰识别越准。</p>
         </div>
       )}
 
