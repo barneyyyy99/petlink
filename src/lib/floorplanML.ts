@@ -155,8 +155,9 @@ function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, i
   }
   if (bx1 <= bx0 || by1 <= by0) { bx0 = left; by0 = top; bx1 = left + iw - 1; by1 = top + ih - 1 }
 
-  // 以地面网格点为种子，向四周生长矩形：某条边"墙占比 > STOP"或越界则该方向停。
-  const STOP = 0.34
+  // 以地面网格点为种子，向四周生长矩形：某条边碰到墙(墙占比 > STOP)或到边界则该方向停。
+  // STOP 取小值→一碰到墙就停，房间严格限制在单个墙围格内，不会横跨墙体/把多间并成一大间。
+  const STOP = 0.12
   const step = Math.max(4, Math.round(Math.min(iw, ih) / 42))
   type Rect = { x0: number; y0: number; x1: number; y1: number; area: number }
   const cand: Rect[] = []
@@ -180,10 +181,26 @@ function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, i
   const innerArea = iw * ih
   const minArea = innerArea * 0.006
   const maxArea = innerArea * 0.4
+  // 内部是否有墙横穿（某条内部行/列大半是墙）→ 说明矩形横跨了墙体，判为非法
+  const crossesWall = (r: Rect) => {
+    const m = 3
+    for (let x = r.x0 + m; x <= r.x1 - m; x += 2) {
+      let w = 0, n = 0
+      for (let y = r.y0 + m; y <= r.y1 - m; y++) { n++; if (inWall(x, y)) w++ }
+      if (n > 0 && w / n > 0.55) return true
+    }
+    for (let y = r.y0 + m; y <= r.y1 - m; y += 2) {
+      let w = 0, n = 0
+      for (let x = r.x0 + m; x <= r.x1 - m; x++) { n++; if (inWall(x, y)) w++ }
+      if (n > 0 && w / n > 0.55) return true
+    }
+    return false
+  }
   cand.sort((a, b) => b.area - a.area)
   const kept: Rect[] = []
   for (const r of cand) {
     if (r.area < minArea || r.area > maxArea) continue
+    if (crossesWall(r)) continue // 不允许横跨墙体
     // 不允许重叠：与任何已选房间有实质重叠即丢弃（相邻房间以墙相隔，本就不重叠）
     let overlap = false
     for (const k of kept) {
