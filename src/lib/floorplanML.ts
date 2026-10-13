@@ -147,23 +147,32 @@ function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, i
     if (x < left || y < top || x >= left + iw || y >= top + ih) return true
     return wall[y * S + x] === 1
   }
+  // 户型边界 = 所有墙像素的外接框（墙是最外层结构；尺寸标注/文字不在墙掩码里）。
+  // 房间一律裁进这个框，保证不超出户型图边界。
+  let bx0 = left + iw, by0 = top + ih, bx1 = left, by1 = top
+  for (let y = top; y < top + ih; y++) for (let x = left; x < left + iw; x++) {
+    if (wall[y * S + x]) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y }
+  }
+  if (bx1 <= bx0 || by1 <= by0) { bx0 = left; by0 = top; bx1 = left + iw - 1; by1 = top + ih - 1 }
+
   // 以地面网格点为种子，向四周生长矩形：某条边"墙占比 > STOP"或越界则该方向停。
-  // 墙线上的小缺口/门洞只占边线一小段，不截断生长；房间以墙为界。
   const STOP = 0.34
   const step = Math.max(4, Math.round(Math.min(iw, ih) / 42))
   type Rect = { x0: number; y0: number; x1: number; y1: number; area: number }
   const cand: Rect[] = []
-  for (let gy = top + step; gy < top + ih - step; gy += step) {
-    for (let gx = left + step; gx < left + iw - step; gx += step) {
+  for (let gy = by0 + step; gy < by1 - step; gy += step) {
+    for (let gx = bx0 + step; gx < bx1 - step; gx += step) {
       if (inWall(gx, gy)) continue
       let x0 = gx, x1 = gx, y0 = gy, y1 = gy
       let L = true, R = true, T = true, B = true, guard = 0
       while ((L || R || T || B) && guard++ < iw + ih) {
-        if (R) { const nx = x1 + 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (w / n > STOP) R = false; else x1 = nx }
-        if (L) { const nx = x0 - 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (w / n > STOP) L = false; else x0 = nx }
-        if (B) { const ny = y1 + 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (w / n > STOP) B = false; else y1 = ny }
-        if (T) { const ny = y0 - 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (w / n > STOP) T = false; else y0 = ny }
+        if (R) { const nx = x1 + 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (nx >= bx1 || w / n > STOP) R = false; else x1 = nx }
+        if (L) { const nx = x0 - 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (nx <= bx0 || w / n > STOP) L = false; else x0 = nx }
+        if (B) { const ny = y1 + 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (ny >= by1 || w / n > STOP) B = false; else y1 = ny }
+        if (T) { const ny = y0 - 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (ny <= by0 || w / n > STOP) T = false; else y0 = ny }
       }
+      // 裁进户型边界框，保证不超出
+      x0 = Math.max(x0, bx0); y0 = Math.max(y0, by0); x1 = Math.min(x1, bx1); y1 = Math.min(y1, by1)
       cand.push({ x0, y0, x1, y1, area: (x1 - x0 + 1) * (y1 - y0 + 1) })
     }
   }
@@ -175,15 +184,14 @@ function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, i
   const kept: Rect[] = []
   for (const r of cand) {
     if (r.area < minArea || r.area > maxArea) continue
-    const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2
-    let dup = false
+    // 不允许重叠：与任何已选房间有实质重叠即丢弃（相邻房间以墙相隔，本就不重叠）
+    let overlap = false
     for (const k of kept) {
-      if (cx >= k.x0 && cx <= k.x1 && cy >= k.y0 && cy <= k.y1) { dup = true; break }
       const ox = Math.max(0, Math.min(r.x1, k.x1) - Math.max(r.x0, k.x0))
       const oy = Math.max(0, Math.min(r.y1, k.y1) - Math.max(r.y0, k.y0))
-      if (ox * oy > 0.4 * r.area) { dup = true; break }
+      if (ox * oy > 0.03 * Math.min(r.area, k.area)) { overlap = true; break }
     }
-    if (!dup) kept.push(r)
+    if (!overlap) kept.push(r)
   }
   kept.sort((a, b) => b.area - a.area)
   const rooms = kept.slice(0, 24)
