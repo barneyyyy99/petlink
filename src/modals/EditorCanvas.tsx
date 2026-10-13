@@ -37,7 +37,7 @@ export function EditorCanvas({ editor, bgImage, wallOverlay }: { editor: Editor;
     // 墙体参考层（模型识别，已去除家具/文字）——拉伸铺满，与底图对齐
     if (wallOverlay && wallOverlay.complete && wallOverlay.naturalWidth) {
       ctx.save()
-      ctx.globalAlpha = 0.9
+      ctx.globalAlpha = 0.55
       ctx.drawImage(wallOverlay, 0, 0, W, H)
       ctx.restore()
     }

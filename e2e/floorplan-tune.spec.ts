@@ -45,6 +45,8 @@ test('户型识别调参：真实户型图识别结果诊断', async ({ page }) 
   // 等待墙体参考层生成（ML 模型首次需下载~24MB+推理，放宽到 60s），再截编辑器画布
   await expect(page.getByTestId('editor-canvas')).toBeVisible({ timeout: 60000 })
   await page.waitForTimeout(4000)
+  // eslint-disable-next-line no-console
+  console.log(`[floorplan-tune] 自动生成房间数 = ${await page.getByTestId('room-row').count()}`)
 
   const canvas = page.getByTestId('editor-canvas')
   if (await canvas.count()) {

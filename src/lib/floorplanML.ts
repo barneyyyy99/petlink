@@ -88,13 +88,7 @@ async function runWallMask(dataUrl: string): Promise<WallMask> {
   return { wall, left, top, iw, ih }
 }
 
-/**
- * 识别墙体并生成"墙体参考层"图：把模型识别到的墙(已去除家具/文字/标注/水印)画成
- * 半透明高亮层，尺寸与原图等比，叠在编辑器底图上供用户照着快速框选房间。
- * 返回 PNG dataURL 及其像素宽高(= letterbox inner 尺寸，等比于原图)。
- */
-export async function detectWallsOverlay(dataUrl: string): Promise<{ url: string; width: number; height: number }> {
-  const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
+function buildOverlay(wall: Uint8Array, left: number, top: number, iw: number, ih: number): string {
   const c = document.createElement('canvas')
   c.width = iw
   c.height = ih
@@ -113,17 +107,32 @@ export async function detectWallsOverlay(dataUrl: string): Promise<{ url: string
     }
   }
   ctx.putImageData(im, 0, 0)
-  return { url: c.toDataURL('image/png'), width: iw, height: ih }
+  return c.toDataURL('image/png')
+}
+
+/**
+ * 一次推理同时产出：墙体参考层图 + 据墙切出的房间矩形（初步，供用户拖拽调整）。
+ * 模型本机运行、图片不外传。
+ */
+export async function detectFloorplan(dataUrl: string): Promise<{ overlayUrl: string; polys: Point[][] }> {
+  const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
+  const overlayUrl = buildOverlay(wall, left, top, iw, ih)
+  const polys = extractRooms(wall, left, top, iw, ih)
+  if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
+    let wc = 0; for (let i = 0; i < wall.length; i++) wc += wall[i]
+    // eslint-disable-next-line no-console
+    console.log(`[FP] detectFloorplan wall=${wc} inner=${iw}x${ih} rooms=${polys.length}`)
+  }
+  return { overlayUrl, polys }
+}
+
+export async function detectWallsOverlay(dataUrl: string): Promise<{ url: string; width: number; height: number }> {
+  const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
+  return { url: buildOverlay(wall, left, top, iw, ih), width: iw, height: ih }
 }
 
 export async function detectRoomsML(dataUrl: string): Promise<Point[][]> {
   const { wall, left, top, iw, ih } = await runWallMask(dataUrl)
-  if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
-    let wc = 0; for (let i = 0; i < wall.length; i++) wc += wall[i]
-    ;(globalThis as unknown as { __FP_MLWALL?: unknown }).__FP_MLWALL = { S, wall, left, top, iw, ih }
-    // eslint-disable-next-line no-console
-    console.log(`[FP] ML wall px=${wc} inner=${iw}x${ih} left=${left} top=${top}`)
-  }
   return extractRooms(wall, left, top, iw, ih)
 }
 
@@ -133,66 +142,61 @@ export async function detectRoomsML(dataUrl: string): Promise<Point[][]> {
  * 一小段，不会使生长停下，于是矩形严格以墙为界、能跨过门洞缺口与家具，得到完整房间。
  */
 function extractRooms(wall: Uint8Array, left: number, top: number, iw: number, ih: number): Point[][] {
-  // 封门洞：把墙膨胀一圈，桥接门口/墙线断口，让每个房间成为被墙完全围住的独立连通域。
-  const SEAL = Math.max(3, Math.round(Math.min(iw, ih) / 90))
-  const sealed = morph(wall, S, S, SEAL, true)
+  closeMask(wall, S, S, 2) // 先把墙线细断口连实
   const inWall = (x: number, y: number) => {
     if (x < left || y < top || x >= left + iw || y >= top + ih) return true
-    return sealed[y * S + x] === 1
+    return wall[y * S + x] === 1
   }
-  const label = new Int32Array(S * S).fill(-1)
-  type Comp = { minx: number; miny: number; maxx: number; maxy: number; area: number; border: boolean }
-  const comps: Comp[] = []
-  const stack: number[] = []
-  for (let yy = top; yy < top + ih; yy++) {
-    for (let xx = left; xx < left + iw; xx++) {
-      const s = yy * S + xx
-      if (inWall(xx, yy) || label[s] !== -1) continue
-      const id = comps.length
-      stack.length = 0
-      stack.push(s); label[s] = id
-      let minx = S, miny = S, maxx = 0, maxy = 0, area = 0, border = false
-      while (stack.length) {
-        const p = stack.pop() as number
-        const x = p % S, y = (p / S) | 0
-        area++
-        if (x < minx) minx = x; if (x > maxx) maxx = x
-        if (y < miny) miny = y; if (y > maxy) maxy = y
-        if (x <= left || y <= top || x >= left + iw - 1 || y >= top + ih - 1) border = true
-        if (!inWall(x - 1, y) && label[p - 1] === -1) { label[p - 1] = id; stack.push(p - 1) }
-        if (!inWall(x + 1, y) && label[p + 1] === -1) { label[p + 1] = id; stack.push(p + 1) }
-        if (!inWall(x, y - 1) && label[p - S] === -1) { label[p - S] = id; stack.push(p - S) }
-        if (!inWall(x, y + 1) && label[p + S] === -1) { label[p + S] = id; stack.push(p + S) }
+  // 以地面网格点为种子，向四周生长矩形：某条边"墙占比 > STOP"或越界则该方向停。
+  // 墙线上的小缺口/门洞只占边线一小段，不截断生长；房间以墙为界。
+  const STOP = 0.34
+  const step = Math.max(4, Math.round(Math.min(iw, ih) / 42))
+  type Rect = { x0: number; y0: number; x1: number; y1: number; area: number }
+  const cand: Rect[] = []
+  for (let gy = top + step; gy < top + ih - step; gy += step) {
+    for (let gx = left + step; gx < left + iw - step; gx += step) {
+      if (inWall(gx, gy)) continue
+      let x0 = gx, x1 = gx, y0 = gy, y1 = gy
+      let L = true, R = true, T = true, B = true, guard = 0
+      while ((L || R || T || B) && guard++ < iw + ih) {
+        if (R) { const nx = x1 + 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (w / n > STOP) R = false; else x1 = nx }
+        if (L) { const nx = x0 - 1; let w = 0; const n = y1 - y0 + 1; for (let y = y0; y <= y1; y++) if (inWall(nx, y)) w++; if (w / n > STOP) L = false; else x0 = nx }
+        if (B) { const ny = y1 + 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (w / n > STOP) B = false; else y1 = ny }
+        if (T) { const ny = y0 - 1; let w = 0; const n = x1 - x0 + 1; for (let x = x0; x <= x1; x++) if (inWall(x, ny)) w++; if (w / n > STOP) T = false; else y0 = ny }
       }
-      comps.push({ minx, miny, maxx, maxy, area, border })
+      cand.push({ x0, y0, x1, y1, area: (x1 - x0 + 1) * (y1 - y0 + 1) })
     }
   }
 
   const innerArea = iw * ih
   const minArea = innerArea * 0.006
-  const maxArea = innerArea * 0.5
-  const exterior = comps.slice().sort((a, b) => b.area - a.area)[0]
-  let rooms = comps.filter((c) => c !== exterior && !c.border && c.area >= minArea && c.area <= maxArea)
-  if (rooms.length === 0) rooms = comps.filter((c) => c !== exterior && c.area >= minArea && c.area <= maxArea)
-  rooms.sort((a, b) => b.area - a.area)
-  rooms = rooms.slice(0, 24)
-  if ((globalThis as unknown as { __FP_DEBUG?: boolean }).__FP_DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(`[FP] ML comps=${comps.length} seal=${SEAL} extArea=${exterior?.area} rooms=${rooms.length} top5=${comps.slice().sort((a,b)=>b.area-a.area).slice(0,5).map(c=>c.area).join(',')}`)
+  const maxArea = innerArea * 0.4
+  cand.sort((a, b) => b.area - a.area)
+  const kept: Rect[] = []
+  for (const r of cand) {
+    if (r.area < minArea || r.area > maxArea) continue
+    const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2
+    let dup = false
+    for (const k of kept) {
+      if (cx >= k.x0 && cx <= k.x1 && cy >= k.y0 && cy <= k.y1) { dup = true; break }
+      const ox = Math.max(0, Math.min(r.x1, k.x1) - Math.max(r.x0, k.x0))
+      const oy = Math.max(0, Math.min(r.y1, k.y1) - Math.max(r.y0, k.y0))
+      if (ox * oy > 0.4 * r.area) { dup = true; break }
+    }
+    if (!dup) kept.push(r)
   }
+  kept.sort((a, b) => b.area - a.area)
+  const rooms = kept.slice(0, 24)
 
-  // 膨胀封门让房间内缩，回扩 SEAL 贴回真实墙内沿
   const sx = MAP_W / iw
   const sy = MAP_H / ih
   const polys: Point[][] = []
-  for (const c of rooms) {
-    const gx0 = Math.max(left, c.minx - SEAL), gy0 = Math.max(top, c.miny - SEAL)
-    const gx1 = Math.min(left + iw - 1, c.maxx + SEAL), gy1 = Math.min(top + ih - 1, c.maxy + SEAL)
-    const x = (gx0 - left) * sx + 3
-    const y = (gy0 - top) * sy + 3
-    const wpx = (gx1 - gx0 + 1) * sx - 6
-    const hpx = (gy1 - gy0 + 1) * sy - 6
-    if (wpx < 20 || hpx < 18) continue
+  for (const r of rooms) {
+    const x = (r.x0 - left) * sx + 3
+    const y = (r.y0 - top) * sy + 3
+    const wpx = (r.x1 - r.x0 + 1) * sx - 6
+    const hpx = (r.y1 - r.y0 + 1) * sy - 6
+    if (wpx < 24 || hpx < 20) continue
     polys.push([
       { x: Math.round(x), y: Math.round(y) },
       { x: Math.round(x + wpx), y: Math.round(y) },

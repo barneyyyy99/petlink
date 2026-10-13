@@ -5,9 +5,10 @@ import { EditorCanvas } from './EditorCanvas'
 import { InspectorPanel } from './InspectorPanel'
 import { useMapEditor } from './useMapEditor'
 import { seedHomeMap } from '@/domain/seed'
-import { clone } from '@/domain/geometry'
+import { clone, makeId } from '@/domain/geometry'
 import { downscaleDataUrl } from '@/lib/image'
 import { FURNITURE_PALETTE, FURNITURE_META } from '@/components/map/furnitureLib'
+import type { Room } from '@/domain/types'
 
 type Tab = 'upload' | 'draw' | 'scan' | 'bind'
 const MAX_IMG = 8 * 1024 * 1024
@@ -79,14 +80,27 @@ export function MapBuilderModal() {
     if (!src) return toast('warn', '请先上传户型图')
     setDetecting(true)
     try {
-      const { detectWallsOverlay, isMLReady } = await import('@/lib/floorplanML')
+      const { detectFloorplan, isMLReady } = await import('@/lib/floorplanML')
       if (!isMLReady()) toast('info', '首次使用正在下载 AI 识别模型（约 25MB，仅需一次）…')
-      const { url } = await detectWallsOverlay(src)
+      const { overlayUrl, polys } = await detectFloorplan(src)
       const img = new Image()
       img.onload = () => setWallOverlay(img)
-      img.src = url
-      editor.load([]) // 清掉默认房间，便于照墙体参考层手绘
-      toast('success', '已标出墙体（绿色参考层，已去除家具/文字）。到“手绘户型”照着拖拽框选房间即可')
+      img.src = overlayUrl
+      if (polys.length) {
+        const rooms: Room[] = polys.map((polygon, i) => ({
+          id: makeId('room'),
+          name: `房间${i + 1}`,
+          kind: 'custom',
+          polygon,
+          devices: [],
+          environment: { temperature: 24, humidity: 55, updatedAt: Date.now() },
+        }))
+        editor.load(rooms)
+        toast('success', `已据墙体生成 ${rooms.length} 个房间（绿色为识别墙体）。拖动顶点/边微调、增删或重命名后应用`)
+      } else {
+        editor.load([])
+        toast('info', '已标出墙体（绿色参考层）。请用“拖拽画房间”照着墙线框选（会自动吸附到墙）')
+      }
       setTab('draw')
     } catch (e) {
       // 识别失败不阻断：仍进入手绘，让用户照底图手绘；并按原因给出可操作提示
@@ -210,6 +224,11 @@ export function MapBuilderModal() {
               </div>
             )}
             <EditorCanvas editor={editor} bgImage={bgImage} wallOverlay={wallOverlay} />
+            {wallOverlay && (
+              <p className="mt-2 rounded-xl bg-[#e8f3ee] px-3 py-2 text-[11px] leading-relaxed text-[#2e7f75]">
+                绿色是 AI 识别出的墙体（已去除家具/文字）。已据此生成房间——拖动顶点/边微调即可；若要新增，用“拖拽画房间”框选会自动吸附到墙线。
+              </p>
+            )}
             <div className="mt-2 flex gap-1.5">
               <button className="btn" disabled={editor.polyDraft.length < 3} onClick={() => editor.finishPoly()}>完成当前自由形状</button>
               <button className="btn" onClick={() => editor.setPolyDraft([])}>取消形状</button>
