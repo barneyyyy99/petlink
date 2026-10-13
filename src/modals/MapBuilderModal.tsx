@@ -88,8 +88,19 @@ export function MapBuilderModal() {
       editor.load([]) // 清掉默认房间，便于照墙体参考层手绘
       toast('success', '已标出墙体（绿色参考层，已去除家具/文字）。到“手绘户型”照着拖拽框选房间即可')
       setTab('draw')
-    } catch {
-      toast('error', '识别失败，请换一张更清晰的户型图')
+    } catch (e) {
+      // 识别失败不阻断：仍进入手绘，让用户照底图手绘；并按原因给出可操作提示
+      const msg = String((e as Error)?.message || e)
+      const loadFail = /fetch|network|load|protobuf|wasm|onnx|Failed|404|session/i.test(msg)
+      editor.load([])
+      setWallOverlay(null)
+      setTab('draw')
+      toast(
+        'warn',
+        loadFail
+          ? 'AI 墙体识别暂不可用（模型未加载成功，可能网络较慢或缓存旧版本，请刷新后重试）。你仍可照着底图直接拖拽画房间。'
+          : '这张图没能识别出清晰墙体，你可以照着底图直接拖拽画房间。',
+      )
     } finally {
       setDetecting(false)
     }
