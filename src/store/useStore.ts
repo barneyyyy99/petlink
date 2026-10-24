@@ -86,6 +86,8 @@ export type StoreState = {
   page: PageKey
   /** 桌面组件/浮窗视图开关（与完整应用共享同一 store，可运行时切换、天然同步位置） */
   widgetMode: boolean
+  /** 手机版视图开关（iOS 风格移动端外观，与完整应用共享同一 store） */
+  mobileMode: boolean
   mapMode: MapMode
   modal: ModalKey
   drawerOpen: boolean
@@ -109,6 +111,7 @@ export type StoreState = {
   goPage: (page: PageKey) => void
   setWidgetMode: (v: boolean) => void
   toggleWidgetMode: () => void
+  setMobileMode: (v: boolean) => void
   setMapMode: (mode: MapMode) => void
   openModal: (m: Exclude<ModalKey, null>) => void
   closeModal: () => void
@@ -249,6 +252,11 @@ export const useStore = create<StoreState>()(
 
       page: 'home',
       widgetMode: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mini') === '1',
+      mobileMode:
+        typeof window !== 'undefined' &&
+        (['1', 'mobile', 'm'].includes(new URLSearchParams(window.location.search).get('mobile') ?? '') ||
+          // 原生壳（Capacitor / Android App）内直接进入手机版 UI
+          !!(window as any).Capacitor),
       mapMode: 'live',
       modal: null,
       drawerOpen: false,
@@ -274,6 +282,7 @@ export const useStore = create<StoreState>()(
       goPage: (page) => set({ page }),
       setWidgetMode: (v) => set({ widgetMode: v }),
       toggleWidgetMode: () => set((s) => ({ widgetMode: !s.widgetMode })),
+      setMobileMode: (v) => set({ mobileMode: v }),
       setMapMode: (mode) => set({ mapMode: mode }),
       openModal: (m) => set({ modal: m }),
       closeModal: () => set({ modal: null }),

@@ -7,7 +7,7 @@ import { useMapEditor } from './useMapEditor'
 import { seedHomeMap } from '@/domain/seed'
 import { clone, makeId } from '@/domain/geometry'
 import { downscaleDataUrl } from '@/lib/image'
-import { FURNITURE_PALETTE, FURNITURE_META } from '@/components/map/furnitureLib'
+import { FURNITURE_PALETTE, FURNITURE_META, drawFurniture, defaultFurniture } from '@/components/map/furnitureLib'
 import type { Room } from '@/domain/types'
 
 type Tab = 'upload' | 'draw' | 'scan' | 'bind'
@@ -156,6 +156,7 @@ export function MapBuilderModal() {
 
   return (
     <Modal open={open} onClose={close} wide eyebrow="CREATE HOME MAP" title="创建 / 编辑家庭地图" desc="支持上传户型图、手绘、空间扫描，并绑定各房间设备。" testId="map-builder-modal">
+      <CurrentModelPreview rooms={homeMap.rooms} name={homeMap.name} />
       <div className="mb-3.5 flex gap-1.5 rounded-2xl bg-[#eef3f0] p-1.5">
         {(['upload', 'draw', 'scan', 'bind'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`flex-1 rounded-xl px-3.5 py-2 text-xs font-bold ${tab === t ? 'bg-white text-teal shadow-softsm' : 'text-[#72817c]'}`}>
@@ -295,6 +296,45 @@ function BindPane() {
       <div className="mt-3">
         <button className="btn btn-primary" onClick={() => { toast('success', '设备与房间绑定已保存'); close() }}>完成绑定</button>
       </div>
+    </div>
+  )
+}
+
+const PREVIEW_FILL: Record<string, string> = {
+  living: '#e3eeff', bedroom: '#eae6fb', study: '#fdeede', balcony: '#e4f1fb', dining: '#eafaf0', custom: '#eef3f8',
+}
+
+/** 当前户型模型只读预览（含家具），放在编辑器顶部，先看到当前模型再改。 */
+function CurrentModelPreview({ rooms, name }: { rooms: Room[]; name: string }) {
+  if (!rooms.length) return null
+  const xs = rooms.flatMap((r) => r.polygon.map((p) => p.x))
+  const ys = rooms.flatMap((r) => r.polygon.map((p) => p.y))
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys)
+  const pad = 24
+  const vw = maxX - minX + pad * 2, vh = maxY - minY + pad * 2
+  return (
+    <div className="mb-3 rounded-2xl border border-line bg-gradient-to-br from-[#eef4ff] to-[#f7fbff] p-3">
+      <div className="mb-1.5 flex items-center justify-between">
+        <b className="text-xs font-bold text-[#53657d]">当前户型预览 · {name}</b>
+        <span className="text-[11px] text-muted">{rooms.length} 个房间</span>
+      </div>
+      <svg viewBox={`${minX - pad} ${minY - pad} ${vw} ${vh}`} className="h-auto w-full" style={{ aspectRatio: `${vw} / ${vh}`, maxHeight: 220 }}>
+        {rooms.map((r) => {
+          const d = r.polygon.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ') + ' Z'
+          const rx = Math.min(...r.polygon.map((p) => p.x)), ry = Math.min(...r.polygon.map((p) => p.y))
+          return (
+            <g key={r.id}>
+              <path d={d} fill={PREVIEW_FILL[r.kind] ?? PREVIEW_FILL.custom} stroke="#c6d3e6" strokeWidth={3} />
+              {(r.furniture ?? defaultFurniture(r)).map((f) => (
+                <g key={f.id} transform={`translate(${f.x} ${f.y}) rotate(${f.rotation ?? 0} ${f.w / 2} ${f.h / 2})`} style={{ pointerEvents: 'none' }}>
+                  {drawFurniture(f.type, f.w, f.h)}
+                </g>
+              ))}
+              <text x={rx + 12} y={ry + 24} fontSize="18" fontWeight="800" fill="#53657d">{r.name}</text>
+            </g>
+          )
+        })}
+      </svg>
     </div>
   )
 }

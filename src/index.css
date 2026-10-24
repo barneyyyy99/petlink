@@ -234,3 +234,46 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* 手机端二级页右滑入场 */
+.animate-slidein {
+  animation: slidein 0.22s ease;
+}
+@keyframes slidein {
+  from {
+    transform: translateX(14%);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+/* 底部抽屉上滑 */
+.animate-sheetup {
+  animation: sheetup 0.24s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes sheetup {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* 手机端 bottom-sheet 内：把完整版的青绿强调色改写为蓝色主题 */
+.m-sheet .bg-teal { background-color: #3d7fff !important; }
+.m-sheet .bg-teal-2 { background-color: #5b9bff !important; }
+.m-sheet .bg-teal-soft { background-color: #eaf1ff !important; }
+.m-sheet .text-teal { color: #3d7fff !important; }
+.m-sheet .text-teal-2 { color: #5b9bff !important; }
+.m-sheet .border-teal { border-color: #3d7fff !important; }
+.m-sheet .border-teal-2 { border-color: #7fb4ff !important; }
+.m-sheet .accent-teal { accent-color: #3d7fff !important; }
+.m-sheet .btn-primary { background-color: #3d7fff !important; color: #fff !important; }
+.m-sheet .badge { background-color: #eaf1ff !important; color: #3d7fff !important; }
+.m-sheet .toggle.on { background: #3d7fff !important; }
+.m-sheet .field:focus { border-color: #7fb4ff !important; }
+.m-sheet .from-teal-2 { --tw-gradient-from: #5b9bff var(--tw-gradient-from-position) !important; }
+.m-sheet .ring-teal { --tw-ring-color: #3d7fff !important; }

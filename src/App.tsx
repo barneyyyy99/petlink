@@ -11,6 +11,7 @@ import { Toaster } from '@/components/Toaster'
 import { TrailDrawer } from '@/components/TrailDrawer'
 import { DemoPanel } from '@/components/DemoPanel'
 import { MiniWidget } from '@/components/MiniWidget'
+import { MobileApp } from '@/mobile/MobileApp'
 import { PwaManager } from '@/components/PwaManager'
 import { AvatarPanel } from '@/modals/AvatarPanel'
 import { CameraModal } from '@/modals/CameraModal'
@@ -39,6 +40,7 @@ export default function App() {
   const page = useStore((s) => s.page)
   const goPage = useStore((s) => s.goPage)
   const widgetMode = useStore((s) => s.widgetMode)
+  const mobileMode = useStore((s) => s.mobileMode)
   const demoMode = useStore((s) => s.demoMode)
   const setDemoMode = useStore((s) => s.setDemoMode)
   const openModal = useStore((s) => s.openModal)
@@ -59,6 +61,11 @@ export default function App() {
   // 浮窗 / 桌面组件模式：仅渲染迷你地图（可运行时切换，与完整应用共享同一 store）
   if (widgetMode) {
     return <MiniWidget />
+  }
+
+  // 手机版：iOS 风格移动端外观，复用同一 store 与全部业务逻辑
+  if (mobileMode) {
+    return <MobileApp />
   }
 
   return (

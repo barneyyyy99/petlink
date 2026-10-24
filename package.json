@@ -16,7 +16,10 @@
     "electron:build": "cross-env VITE_ELECTRON=1 vite build && electron-builder",
     "electron:dist": "cross-env VITE_ELECTRON=1 vite build && electron-builder --publish never",
     "electron:publish": "cross-env VITE_ELECTRON=1 vite build && electron-builder --publish always",
-    "electron:start": "cross-env VITE_ELECTRON=1 vite build && electron ."
+    "electron:start": "cross-env VITE_ELECTRON=1 vite build && electron .",
+    "cap:sync": "vite build && cap sync android",
+    "android:open": "npm run cap:sync && cap open android",
+    "android:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -29,6 +32,9 @@
     "zustand": "4.5.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.2",
+    "@capacitor/cli": "^6.2.2",
+    "@capacitor/core": "^6.2.2",
     "@playwright/test": "1.47.2",
     "@types/node": "^22.20.4",
     "@types/react": "18.3.11",

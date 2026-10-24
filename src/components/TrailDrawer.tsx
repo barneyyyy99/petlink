@@ -4,12 +4,62 @@ import { summarizeDay } from '@/lib/diary'
 
 export function TrailDrawer() {
   const open = useStore((s) => s.drawerOpen)
+  const mobile = useStore((s) => s.mobileMode)
   const toggleDrawer = useStore((s) => s.toggleDrawer)
   const events = useStore((s) => s.events)
   const openEvent = useStore((s) => s.openEvent)
   const openCamera = useStore((s) => s.openCamera)
   const home = useStore((s) => s.homeMap)
+  const pet = useStore((s) => s.pet)
   const sum = summarizeDay(events, home)
+
+  const body = (
+    <>
+      <div className="my-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-[#d9e8e2] bg-gradient-to-br from-[#e6f4ef] to-[#f7fbf8] p-3.5 text-center">
+        <div><b className="block text-base">{sum.roomChanges}</b><span className="text-[12px] text-muted">房间切换</span></div>
+        <div><b className="block text-base">{events.length}</b><span className="text-[12px] text-muted">关键事件</span></div>
+        <div><b className="block text-base">{sum.plays}</b><span className="text-[12px] text-muted">玩耍</span></div>
+      </div>
+      <div className="flex-1 overflow-auto pb-10 pr-1">
+        {events.map((e) => (
+          <div key={e.id} className="relative pb-5 pl-8">
+            <i className="absolute left-1 top-1 h-3.5 w-3.5 rounded-full border-4 border-teal-2 bg-white" />
+            {events[events.length - 1].id !== e.id && <span className="absolute left-[10px] top-[18px] bottom-[-2px] w-px bg-line" />}
+            <button className="w-full rounded-2xl border border-line bg-white p-3.5 text-left transition hover:border-[#bfd6ce]" onClick={() => openEvent(e)} data-testid="trail-event">
+              <span className="text-[11px] font-bold tracking-wide text-[#9aa8a3]">{timeHM(e.timestamp)}</span>
+              <b className="my-1 block text-sm">{e.title}</b>
+              <span className="text-[11px] text-muted">{e.detail}</span>
+              {e.media && (
+                <span className="mt-2.5 flex h-[70px] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#eef3ef,#eef3ef_8px,#f9fbf9_8px,#f9fbf9_16px)] text-[11px] text-[#81908a]">
+                  {e.media.type === 'video' ? '▶ 查看视频摘要' : '📷 查看对应摄像头片段'}
+                </span>
+              )}
+            </button>
+            {(e.type === 'room_change' || e.type === 'bell') && (
+              <button className="mt-1.5 text-[12px] font-bold text-teal" onClick={() => openCamera()}>跳到对应摄像头 →</button>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+
+  // 手机端：底部抽屉（锚定手机外框内），不显示右侧竖排拉手
+  if (mobile) {
+    if (!open) return null
+    return (
+      <div className="m-sheet absolute inset-0 z-[110] flex items-end bg-[rgba(17,25,40,.4)]" onClick={() => toggleDrawer(false)}>
+        <div className="animate-sheetup flex max-h-[88%] w-full flex-col overflow-hidden rounded-t-[24px] bg-[#f6f8fc] px-5 pb-6" onClick={(e) => e.stopPropagation()}>
+          <div className="relative flex items-center justify-between pb-2 pt-4">
+            <span className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#e2e6ee]" />
+            <div><div className="text-[10px] font-extrabold uppercase tracking-[2px] text-[#3D7FFF]">PET TRAIL</div><h3 className="text-[18px] font-bold text-[#1B1E28]">{pet.name}的踪迹</h3></div>
+            <button className="grid h-8 w-8 place-items-center rounded-full bg-[#f2f5fa] text-[18px] text-[#6b7280]" onClick={() => toggleDrawer(false)} aria-label="关闭">×</button>
+          </div>
+          {body}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -28,37 +78,12 @@ export function TrailDrawer() {
         style={{ transform: open ? 'none' : 'translateX(100%)' }}
       >
         <div className="flex items-center justify-between">
-          <div><div className="eyebrow">PET TRAIL</div><h3 className="text-xl font-bold">毛球的踪迹</h3></div>
+          <div><div className="eyebrow">PET TRAIL</div><h3 className="text-xl font-bold">{pet.name}的踪迹</h3></div>
           <button className="grid h-9 w-9 place-items-center rounded-xl bg-[#edf2ef] text-[#6e7f79]" onClick={() => toggleDrawer(false)}>×</button>
         </div>
-        <div className="my-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-[#d9e8e2] bg-gradient-to-br from-[#e6f4ef] to-[#f7fbf8] p-3.5 text-center">
-          <div><b className="block text-base">{sum.roomChanges}</b><span className="text-[12px] text-muted">房间切换</span></div>
-          <div><b className="block text-base">{events.length}</b><span className="text-[12px] text-muted">关键事件</span></div>
-          <div><b className="block text-base">{sum.plays}</b><span className="text-[12px] text-muted">玩耍</span></div>
-        </div>
-
-        <div className="flex-1 overflow-auto pb-10 pr-1">
-          {events.map((e) => (
-            <div key={e.id} className="relative pb-5 pl-8">
-              <i className="absolute left-1 top-1 h-3.5 w-3.5 rounded-full border-4 border-teal-2 bg-white" />
-              {events[events.length - 1].id !== e.id && <span className="absolute left-[10px] top-[18px] bottom-[-2px] w-px bg-line" />}
-              <button className="w-full rounded-2xl border border-line bg-white p-3.5 text-left transition hover:border-[#bfd6ce]" onClick={() => openEvent(e)} data-testid="trail-event">
-                <span className="text-[11px] font-bold tracking-wide text-[#9aa8a3]">{timeHM(e.timestamp)}</span>
-                <b className="my-1 block text-sm">{e.title}</b>
-                <span className="text-[11px] text-muted">{e.detail}</span>
-                {e.media && (
-                  <span className="mt-2.5 flex h-[70px] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#eef3ef,#eef3ef_8px,#f9fbf9_8px,#f9fbf9_16px)] text-[11px] text-[#81908a]">
-                    {e.media.type === 'video' ? '▶ 查看视频摘要' : '📷 查看对应摄像头片段'}
-                  </span>
-                )}
-              </button>
-              {(e.type === 'room_change' || e.type === 'bell') && (
-                <button className="mt-1.5 text-[12px] font-bold text-teal" onClick={() => openCamera()}>跳到对应摄像头 →</button>
-              )}
-            </div>
-          ))}
-        </div>
+        {body}
       </aside>
     </>
   )
 }
+
