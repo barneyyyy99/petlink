@@ -24,7 +24,7 @@ export function NavProvider({ children, render }: { children: ReactNode; render:
 }
 
 /** 二级页外壳：状态栏 + 返回头 + 可滚动内容（手机端规格，非电脑弹窗） */
-export function SubScreen({ title, right, onRight, dark = false, children }: { title: string; right?: string; onRight?: () => void; dark?: boolean; children: ReactNode }) {
+export function SubScreen({ title, right, onRight, dark = false, fill = false, children }: { title: string; right?: string; onRight?: () => void; dark?: boolean; fill?: boolean; children: ReactNode }) {
   const { back } = useNav()
   return (
     <>
@@ -36,7 +36,11 @@ export function SubScreen({ title, right, onRight, dark = false, children }: { t
           {right ? <button className="text-[14px] font-semibold" style={{ color: C.primary }} onClick={onRight}>{right}</button> : <span className="inline-block w-9" />}
         </div>
       </div>
-      <div className="no-scrollbar flex-1 overflow-y-auto overflow-x-hidden px-4 pb-10 pt-1">{children}</div>
+      {fill ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+      ) : (
+        <div className="no-scrollbar flex-1 overflow-y-auto overflow-x-hidden px-4 pb-10 pt-1">{children}</div>
+      )}
     </>
   )
 }

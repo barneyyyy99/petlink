@@ -12,6 +12,10 @@ type MobileUi = {
   /** 首页"叫它"呼唤弹窗 */
   callSheet: boolean
   setCallSheet: (v: boolean) => void
+  /** 预录呼唤短语（叫它弹窗 / 声音库共享） */
+  phrases: string[]
+  addPhrase: (p: string) => void
+  removePhrase: (p: string) => void
 }
 
 export const useMobileUi = create<MobileUi>()(
@@ -23,6 +27,9 @@ export const useMobileUi = create<MobileUi>()(
       setBaiduName: (v) => set({ baiduName: v }),
       callSheet: false,
       setCallSheet: (v) => set({ callSheet: v }),
+      phrases: ['豆豆～', '过来', '好棒'],
+      addPhrase: (p) => set((s) => (p.trim() && !s.phrases.includes(p.trim()) ? { phrases: [...s.phrases, p.trim()] } : {})),
+      removePhrase: (p) => set((s) => ({ phrases: s.phrases.filter((x) => x !== p) })),
     }),
     { name: 'petlink-mobile-ui' },
   ),

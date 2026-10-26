@@ -1,37 +1,41 @@
 import { useRef, useState } from 'react'
 import { useStore } from '@/store/useStore'
-import { Mic, Play } from 'lucide-react'
+import { Mic, Play, Plus, Check, X } from 'lucide-react'
 import { C } from '@/mobile/theme'
 import { useMobileUi } from '@/mobile/useMobileUi'
 
-const PHRASES = ['豆豆～', '过来', '好棒', '吃饭啦', '我晚点回来']
-
-/** 首页"叫它"：呼唤宠物弹窗（预录短语播放 + 按住实时喊话） */
+/** 首页"叫它"：呼唤宠物弹窗（预录短语播放 + 新增录音 + 按住实时喊话） */
 export function VoiceCallSheet() {
   const open = useMobileUi((s) => s.callSheet)
   const setOpen = useMobileUi((s) => s.setCallSheet)
+  const phrases = useMobileUi((s) => s.phrases)
+  const addPhrase = useMobileUi((s) => s.addPhrase)
   const pet = useStore((s) => s.pet)
   const devices = useStore((s) => s.devices)
   const sendCommand = useStore((s) => s.sendCommand)
   const toast = useStore((s) => s.toast)
   const [talking, setTalking] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [label, setLabel] = useState('')
+  const [recording, setRecording] = useState(false)
   const secRef = useRef(0)
   const timerRef = useRef<number | null>(null)
   const speaker = devices.find((d) => d.type === 'speaker')
 
   if (!open) return null
 
-  const phrases = PHRASES.slice(0, 3)
-  const startTalk = () => {
-    setTalking(true); secRef.current = 0
-    timerRef.current = window.setInterval(() => (secRef.current += 1), 1000)
-  }
-  const endTalk = () => {
-    if (!talking) return
+  const startTalk = () => { setTalking(true) }
+  const endTalk = () => { if (!talking) return; setTalking(false); sendCommand(speaker?.id ?? pet.id, '实时喊话'); toast('success', `已通过最近的小度设备喊话给${pet.name}`) }
+
+  const startRec = () => { if (!label.trim()) return toast('warn', '先给这句话起个名字'); setRecording(true); secRef.current = 0; timerRef.current = window.setInterval(() => (secRef.current += 1), 1000) }
+  const endRec = () => {
+    if (!recording) return
     if (timerRef.current) window.clearInterval(timerRef.current)
-    setTalking(false)
-    sendCommand(speaker?.id ?? pet.id, '实时喊话')
-    toast('success', `已通过最近的小度设备喊话给${pet.name}`)
+    setRecording(false)
+    addPhrase(label.trim())
+    // TODO: 真实声线克隆 —— 上传录音到克隆服务
+    toast('success', `已录入「${label.trim()}」，云端声线克隆中…`)
+    setLabel(''); setAdding(false)
   }
 
   return (
@@ -48,12 +52,30 @@ export function VoiceCallSheet() {
               <Play size={14} fill={C.primary} /> {p}
             </button>
           ))}
+          {/* 新增录音 */}
+          <button onClick={() => setAdding((v) => !v)} className="flex items-center gap-1 rounded-full border-2 border-dashed px-3.5 py-2 text-[14px] font-bold" style={{ borderColor: C.primary, color: C.primary }}>
+            <Plus size={16} /> 录新短语
+          </button>
         </div>
 
+        {/* 新增录音行 */}
+        {adding && (
+          <div className="mt-3 rounded-2xl bg-[#f4f7fc] p-3">
+            <div className="flex items-center gap-2">
+              <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="给这句话起个名字，如：宝贝别怕" className="flex-1 rounded-full bg-white px-3.5 py-2 text-[13px] outline-none" />
+              <button onClick={() => { setAdding(false); setLabel('') }} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-[#9aa4b4]" aria-label="取消"><X size={15} /></button>
+            </div>
+            <button
+              onPointerDown={startRec} onPointerUp={endRec} onPointerLeave={endRec}
+              className="mt-2.5 flex w-full select-none items-center justify-center gap-2 rounded-full py-3 text-[14px] font-bold text-white" style={{ background: recording ? C.danger : C.primary }}
+            >
+              {recording ? <><Check size={16} /> 松开保存（{secRef.current}s）</> : <><Mic size={16} /> 按住录制</>}
+            </button>
+          </div>
+        )}
+
         <button
-          onPointerDown={startTalk}
-          onPointerUp={endTalk}
-          onPointerLeave={endTalk}
+          onPointerDown={startTalk} onPointerUp={endTalk} onPointerLeave={endTalk}
           className="mt-4 flex w-full select-none items-center justify-center gap-2 rounded-full py-4 text-[16px] font-bold text-white shadow-[0_8px_22px_rgba(40,199,111,.4)] transition active:scale-[.98]"
           style={{ background: talking ? '#1fae5f' : 'linear-gradient(90deg,#5BD98A,#28C76F)' }}
         >
