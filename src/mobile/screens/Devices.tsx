@@ -1,17 +1,39 @@
+import { useState } from 'react'
 import { useStore, currentRoom } from '@/store/useStore'
 import { PetFace } from '@/components/PetFace'
 import { Search, Bell, ChevronDown, ChevronRight, Eye, Volume2, Video, Utensils, Users, BookHeart, PawPrint, ClipboardList, Radio } from 'lucide-react'
 import { C, G } from '@/mobile/theme'
-import { Card, SectionHeader } from '@/mobile/MobileShell'
+import { Card } from '@/mobile/MobileShell'
 import { useNav } from '@/mobile/nav'
+import { useMobileUi } from '@/mobile/useMobileUi'
 import type { MTab } from '@/mobile/MobileApp'
 
-const LOG = [
-  { t: '09:20', s: '窗边晒太阳 30 分钟 ☀️' },
-  { t: '12:40', s: '自动喂食 15g，吃光光 🍚' },
-  { t: '15:10', s: '追逗猫棒跑了 8 圈 🏃' },
-  { t: '20:30', s: '呼噜入睡，心情很好 😴' },
-]
+type Range = '日' | '周' | '月'
+const LOG_BY: Record<Range, { t: string; s: string }[]> = {
+  日: [
+    { t: '09:20', s: '窗边晒太阳 30 分钟 ☀️' },
+    { t: '12:40', s: '自动喂食 15g，吃光光 🍚' },
+    { t: '15:10', s: '追逗猫棒跑了 8 圈 🏃' },
+    { t: '20:30', s: '呼噜入睡，心情很好 😴' },
+  ],
+  周: [
+    { t: '周一', s: '活动量最高的一天，跑了 12 圈' },
+    { t: '周三', s: '午后小睡偏多，睡眠 14.2h' },
+    { t: '周五', s: '进食规律，食量平稳' },
+    { t: '周日', s: '窗边晒太阳时间最长' },
+  ],
+  月: [
+    { t: '第1周', s: '整体活力稳定，均分 90' },
+    { t: '第2周', s: '运动量上升，日均 4800 步' },
+    { t: '第3周', s: '睡眠略增，日均 13.4h' },
+    { t: '第4周', s: '状态良好，无异常行为' },
+  ],
+}
+const STAT_BY: Record<Range, { steps: string; stepsLabel: string; sleep: string; sleepLabel: string; vigor: string }> = {
+  日: { steps: '4126', stepsLabel: '步 · 今日', sleep: '13.5', sleepLabel: '睡眠时长', vigor: '92' },
+  周: { steps: '2.8万', stepsLabel: '步 · 本周', sleep: '13.1', sleepLabel: '日均睡眠', vigor: '90' },
+  月: { steps: '11.6万', stepsLabel: '步 · 本月', sleep: '12.8', sleepLabel: '日均睡眠', vigor: '88' },
+}
 
 export function Devices({ go }: { go: (t: MTab) => void }) {
   const pet = useStore((s) => s.pet)
@@ -20,19 +42,20 @@ export function Devices({ go }: { go: (t: MTab) => void }) {
   const openCamera = useStore((s) => s.openCamera)
   const openModal = useStore((s) => s.openModal)
   const toggleDrawer = useStore((s) => s.toggleDrawer)
-  const sendCommand = useStore((s) => s.sendCommand)
   const setDeviceControlTarget = useStore((s) => s.setDeviceControlTarget)
   const toast = useStore((s) => s.toast)
   const { openSub } = useNav()
+  const setCallSheet = useMobileUi((s) => s.setCallSheet)
+  const [logRange, setLogRange] = useState<Range>('日')
 
-  const speaker = devices.find((d) => d.type === 'speaker')
   const feeder = devices.find((d) => d.type === 'feeder')
+  const stat = STAT_BY[logRange]
   const now = new Date()
   const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${now.toTimeString().slice(0, 8)}`
 
   const acts = [
     { icon: Eye, label: '看它', on: () => openCamera() },
-    { icon: Volume2, label: '叫它', on: () => sendCommand(speaker?.id ?? pet.id, `呼叫${pet.name}`) },
+    { icon: Volume2, label: '叫它', on: () => setCallSheet(true) },
     { icon: Video, label: '远程陪伴', on: () => openCamera(true) },
     { icon: Utensils, label: '投喂', on: () => setDeviceControlTarget({ deviceId: feeder?.id ?? '' }) },
   ]
@@ -106,20 +129,30 @@ export function Devices({ go }: { go: (t: MTab) => void }) {
         ))}
       </div>
       {/* 今日日志（米白↔蓝 中间色卡） */}
-      <SectionHeader title={`${pet.name}今日日志`} extra="查看全部 ›" onExtra={() => go('health')} />
+      <div className="mb-2.5 mt-1 flex items-center justify-between px-1">
+        <h3 className="text-[16px] font-bold" style={{ color: C.ink }}>{pet.name}{logRange === '日' ? '今日' : logRange === '周' ? '本周' : '本月'}日志</h3>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-full bg-white/70 p-0.5">
+            {(['日', '周', '月'] as Range[]).map((r) => (
+              <button key={r} onClick={() => setLogRange(r)} className="rounded-full px-2.5 py-1 text-[12px] font-bold" style={logRange === r ? { background: C.primary, color: '#fff' } : { color: C.sub }}>{r}</button>
+            ))}
+          </div>
+          <button className="text-[12px] font-semibold" style={{ color: C.sub }} onClick={() => go('health')}>全部 ›</button>
+        </div>
+      </div>
       <div className="overflow-hidden rounded-[18px] p-4" style={{ background: 'linear-gradient(135deg,#F1EDE4 0%,#DCE4F3 100%)', color: C.ink }}>
         <div className="flex items-center gap-2">
           <span className="text-lg">🐾</span>
-          <b className="text-[14px]" style={{ color: C.ink }}>今天{pet.name}过得还不错～</b>
+          <b className="text-[14px]" style={{ color: C.ink }}>{logRange === '日' ? `今天${pet.name}过得还不错～` : logRange === '周' ? `这一周${pet.name}状态很稳定～` : `这个月${pet.name}整体很健康～`}</b>
           <span className="ml-auto text-[11px]" style={{ color: C.sub }}>{String(now.getMonth() + 1).padStart(2, '0')}-{String(now.getDate()).padStart(2, '0')} 推送</span>
         </div>
         <div className="my-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.ink }}>4126</b><span className="text-[10px]" style={{ color: C.sub }}>步 · 活动量</span></div>
-          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.ink }}>13.5<span className="text-[11px]">h</span></b><span className="text-[10px]" style={{ color: C.sub }}>睡眠时长</span></div>
-          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.primary }}>92</b><span className="text-[10px]" style={{ color: C.sub }}>活力分</span></div>
+          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.ink }}>{stat.steps}</b><span className="text-[10px]" style={{ color: C.sub }}>{stat.stepsLabel}</span></div>
+          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.ink }}>{stat.sleep}<span className="text-[11px]">h</span></b><span className="text-[10px]" style={{ color: C.sub }}>{stat.sleepLabel}</span></div>
+          <div className="rounded-2xl py-2.5" style={{ background: 'rgba(255,255,255,.55)' }}><b className="block text-[18px]" style={{ color: C.primary }}>{stat.vigor}</b><span className="text-[10px]" style={{ color: C.sub }}>活力分</span></div>
         </div>
         <div className="flex flex-col gap-2">
-          {LOG.map((l) => (
+          {LOG_BY[logRange].map((l) => (
             <div key={l.t} className="flex items-center gap-3 text-[12px]">
               <span className="w-[42px] shrink-0 font-semibold" style={{ color: C.primary }}>{l.t}</span>
               <span style={{ color: '#4a5366' }}>{l.s}</span>

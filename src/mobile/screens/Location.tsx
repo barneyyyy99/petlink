@@ -4,6 +4,7 @@ import { HomeIso } from '@/components/map/HomeIso'
 import { Pencil, Thermometer, Shield, ChevronRight } from 'lucide-react'
 import { C, G } from '@/mobile/theme'
 import { Card, SectionHeader } from '@/mobile/MobileShell'
+import { useNav } from '@/mobile/nav'
 
 export function Location() {
   const home = useStore((s) => s.homeMap)
@@ -15,6 +16,7 @@ export function Location() {
   const turnOnAC = useStore((s) => s.turnOnAC)
   const setLost = useStore((s) => s.setLost)
   const events = useStore((s) => s.events)
+  const { openSub } = useNav()
   const [away, setAway] = useState(false)
 
   const rooms = home.rooms
@@ -71,7 +73,7 @@ export function Location() {
       </div>
 
       {/* 家庭围栏 */}
-      <Card onClick={() => openModal('fence')} className="!p-3.5">
+      <Card onClick={() => openSub('fence')} className="!p-3.5">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]" style={{ background: C.primarySoft }}><Shield size={20} color={C.primary} /></span>
           <div className="min-w-0 flex-1"><b className="block text-[14px]" style={{ color: C.ink }}>家庭围栏</b><span className="text-[11px]" style={{ color: C.sub }}>{pet.name}的家 · {away ? '已离开范围' : '在家范围内'}</span></div>

@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import { C, G } from '@/mobile/theme'
 import { StatusBar } from '@/mobile/MobileShell'
 
-export type SubKey = 'collar' | 'persona' | 'voice' | 'linked' | 'widget' | 'account'
+export type SubKey = 'collar' | 'persona' | 'voice' | 'linked' | 'widget' | 'account' | 'superdu' | 'fence'
 
 type Nav = { openSub: (k: SubKey) => void; back: () => void }
 const NavCtx = createContext<Nav>({ openSub: () => {}, back: () => {} })

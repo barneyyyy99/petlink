@@ -16,6 +16,9 @@ import { VoiceLibScreen } from '@/mobile/screens/sub/VoiceLib'
 import { LinkedScreen } from '@/mobile/screens/sub/Linked'
 import { WidgetScreen } from '@/mobile/screens/sub/Widget'
 import { AccountScreen } from '@/mobile/screens/sub/Account'
+import { SuperDuScreen } from '@/mobile/screens/sub/SuperDu'
+import { FenceScreen } from '@/mobile/screens/sub/Fence'
+import { VoiceCallSheet } from '@/mobile/VoiceCallSheet'
 import { PetBubble } from '@/mobile/PetBubble'
 import { useMobileUi } from '@/mobile/useMobileUi'
 // 复用已实现的功能弹层，保证交互真实可用
@@ -67,6 +70,8 @@ export function MobileApp() {
       case 'linked': return <LinkedScreen />
       case 'widget': return <WidgetScreen />
       case 'account': return <AccountScreen />
+      case 'superdu': return <SuperDuScreen />
+      case 'fence': return <FenceScreen />
     }
   }
 
@@ -131,6 +136,7 @@ export function MobileApp() {
         <LiveLocateModal />
         <AuthModal />
         <DesktopWidgetModal />
+        <VoiceCallSheet />
         {bubble && <PetBubble />}
       </div>
     </div>

@@ -9,6 +9,9 @@ type MobileUi = {
   /** 百度账号显示名（接入真实 UUAP/OAuth 前的占位） */
   baiduName: string | null
   setBaiduName: (v: string | null) => void
+  /** 首页"叫它"呼唤弹窗 */
+  callSheet: boolean
+  setCallSheet: (v: boolean) => void
 }
 
 export const useMobileUi = create<MobileUi>()(
@@ -18,6 +21,8 @@ export const useMobileUi = create<MobileUi>()(
       setBubble: (v) => set({ bubble: v }),
       baiduName: null,
       setBaiduName: (v) => set({ baiduName: v }),
+      callSheet: false,
+      setCallSheet: (v) => set({ callSheet: v }),
     }),
     { name: 'petlink-mobile-ui' },
   ),
