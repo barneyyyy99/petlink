@@ -34,11 +34,12 @@ function deviceStatusText(dev: Device, room?: Room): string {
 }
 
 /** 整屋 2.5D 等距视图：房间抬升为地台、家具立体化、宠物实时移动。比平面图更立体柔和。 */
-export function HomeIso() {
+export function HomeIso({ draggable = false }: { draggable?: boolean } = {}) {
   const rooms = useStore((s) => s.homeMap.rooms)
   const devices = useStore((s) => s.devices)
   const pets = useStore((s) => s.pets)
   const activePetId = useStore((s) => s.activePetId)
+  const moveToRoom = useStore((s) => s.moveToRoom)
   const setActivePet = useStore((s) => s.setActivePet)
   const mapMode = useStore((s) => s.mapMode)
   const transition = useStore((s) => s.transitionRoute)
@@ -56,6 +57,27 @@ export function HomeIso() {
   const [tick, setTick] = useState(0)
   const [popover, setPopover] = useState<string | null>(null)
   const clickTimer = useRef<number | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [drag, setDrag] = useState<{ left: number; top: number } | null>(null)
+  const dragMovedRef = useRef(false)
+
+  // 拖拽落点 → 最近房间
+  const dropToRoom = (clientX: number, clientY: number) => {
+    const el = wrapRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const px = ((clientX - rect.left) / rect.width) * VW
+    const py = ((clientY - rect.top) / rect.height) * VH
+    let best: string | null = null
+    let bestD = Infinity
+    for (const r of rooms) {
+      const c = roomCentroid(r)
+      const pp = P(c.x, c.y, SLAB_H)
+      const d = (pp.X - px) ** 2 + (pp.Y - py) ** 2
+      if (d < bestD) { bestD = d; best = r.id }
+    }
+    if (best) moveToRoom(best)
+  }
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 2600)
@@ -105,6 +127,7 @@ export function HomeIso() {
 
   return (
     <div
+      ref={wrapRef}
       className="relative mx-auto w-full overflow-hidden rounded-[28px] border border-line shadow-soft"
       style={{ aspectRatio: `${VW} / ${VH}`, maxHeight: '100%', background: amb.bg, transition: 'background 1.2s ease' }}
     >
@@ -283,31 +306,39 @@ export function HomeIso() {
         const isActive = p.id === activePetId
         const r = rooms.find((rm) => rm.id === p.roomId)
         const color = behaviorColor[p.behavior]
+        const canDrag = draggable && isActive
+        const isDragging = canDrag && !!drag
         return (
           <div
             key={p.id}
             className="absolute"
             style={{
-              left: `${leftPct}%`,
-              top: `${topPct}%`,
+              left: isDragging ? `${drag!.left}%` : `${leftPct}%`,
+              top: isDragging ? `${drag!.top}%` : `${topPct}%`,
               transform: 'translate(-50%,-82%)',
-              transition: w.walking ? 'left .42s linear, top .42s linear' : 'left 2.4s ease-in-out, top 2.4s ease-in-out',
-              zIndex: isActive ? 8 : 6,
+              transition: isDragging ? 'none' : w.walking ? 'left .42s linear, top .42s linear' : 'left 2.4s ease-in-out, top 2.4s ease-in-out',
+              zIndex: isDragging ? 20 : isActive ? 8 : 6,
               opacity: mapMode === 'devices' ? 0.5 : 1,
+              touchAction: canDrag ? 'none' : undefined,
             }}
           >
             <button
               data-testid={isActive ? 'pet-avatar' : 'pet-avatar-other'}
               aria-label={`${p.name} Avatar，当前${r?.name ?? ''}·${behaviorLabel[p.behavior]}`}
-              title={`${p.name} · ${r?.name ?? ''} · ${behaviorLabel[p.behavior]}`}
+              title={canDrag ? `拖动${p.name}到其它房间` : `${p.name} · ${r?.name ?? ''} · ${behaviorLabel[p.behavior]}`}
+              onPointerDown={canDrag ? (e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); dragMovedRef.current = false; const rect = wrapRef.current!.getBoundingClientRect(); setDrag({ left: ((e.clientX - rect.left) / rect.width) * 100, top: ((e.clientY - rect.top) / rect.height) * 100 }) } : undefined}
+              onPointerMove={canDrag ? (e) => { if (!drag) return; dragMovedRef.current = true; const rect = wrapRef.current!.getBoundingClientRect(); setDrag({ left: ((e.clientX - rect.left) / rect.width) * 100, top: ((e.clientY - rect.top) / rect.height) * 100 }) } : undefined}
+              onPointerUp={canDrag ? (e) => { if (drag && dragMovedRef.current) dropToRoom(e.clientX, e.clientY); setDrag(null) } : undefined}
               onClick={() => {
+                if (dragMovedRef.current) { dragMovedRef.current = false; return }
                 if (!isActive) { setActivePet(p.id); setPopover(p.id) }
                 else setPopover((v) => (v === p.id ? null : p.id))
               }}
-              className={`relative grid h-[60px] w-[60px] place-items-center overflow-hidden rounded-[20px] border-4 bg-[#fff8e9] ${behaviorAnim[p.behavior] ?? ''}`}
+              className={`relative grid h-[60px] w-[60px] place-items-center overflow-hidden rounded-[20px] border-4 bg-[#fff8e9] ${isDragging ? '' : behaviorAnim[p.behavior] ?? ''}`}
               style={{
                 borderColor: isActive ? color : '#ffffff',
                 boxShadow: isActive ? `0 0 0 6px ${color}22, 0 16px 26px rgba(53,86,77,.22)` : '0 10px 20px rgba(53,86,77,.16)',
+                cursor: canDrag ? 'grab' : 'pointer',
               }}
             >
               <PetFace pet={p} size={52} />

@@ -27,7 +27,7 @@ export function Mine() {
   const email = authUser?.email ?? ''
   const main: Row[] = [
     { icon: MonitorSmartphone, title: '桌宠小窗', sub: '在电脑/桌面显示毛孩子数字分身', on: () => openSub('widget') },
-    { icon: Home, title: '我的家庭', sub: '家庭成员、设备与宠物管理', tag: '1 个', on: () => openModal('auth') },
+    { icon: Home, title: '我的家庭', sub: '家庭成员、设备与宠物管理', tag: '1 个', on: () => openSub('family') },
     { icon: Cpu, title: '我的设备', sub: '项圈、喂食器等智能设备管理', on: () => openSub('linked') },
     { icon: Cloud, title: '账号与云端同步', sub: '家庭 ID、多端数据同步与备份', tag: authUser ? '已同步' : '未登录', on: () => openSub('account') },
     { icon: Zap, title: '全屋自动联动', sub: '温控、投喂、回家欢迎等场景规则', tag: '4 条', on: () => openSub('linked') },
@@ -44,8 +44,10 @@ export function Mine() {
   ]
 
   const more = [
-    { icon: FileText, title: '隐私政策' }, { icon: HelpCircle, title: '常见问题 · 图标说明' },
-    { icon: Info, title: '关于我们' }, { icon: Images, title: '我的相册' },
+    { icon: FileText, title: '隐私政策', on: () => toast('info', '隐私政策（示例页）') },
+    { icon: HelpCircle, title: '常见问题 · 图标说明', on: () => toast('info', '常见问题（示例页）') },
+    { icon: Info, title: '关于我们', on: () => toast('info', '关于我们（示例页）') },
+    { icon: Images, title: '我的相册', on: () => openSub('album') },
   ]
 
   return (
@@ -70,7 +72,7 @@ export function Mine() {
             <b className="text-[14px]">小度 Care · 为爱宠的健康付费</b>
             <p className="text-[11px] text-white/60">AI 问诊 / 专属行为模型 / 无限记忆存储</p>
           </div>
-          <button className="shrink-0 rounded-full bg-[#FFD56A] px-3 py-1.5 text-[12px] font-bold" style={{ color: '#5a4410' }} onClick={() => toast('info', '小度 Care 开通开发中')}>去开通</button>
+          <button className="shrink-0 rounded-full bg-[#FFD56A] px-3 py-1.5 text-[12px] font-bold" style={{ color: '#5a4410' }} onClick={() => openSub('care')}>去开通</button>
         </div>
       </Card>
       {/* 主功能列表 */}
@@ -83,7 +85,7 @@ export function Mine() {
       <div className="px-1 text-[12px] font-bold" style={{ color: C.sub }}>更多</div>
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_6px_20px_rgba(31,60,120,.07)]">
         {more.map((m, i) => (
-          <button key={m.title} onClick={() => toast('info', `${m.title}（示例页）`)} className={`flex w-full items-center gap-3 p-3.5 text-left active:bg-[#f4f7fc] ${i < more.length - 1 ? 'border-b border-[#f0f2f7]' : ''}`}>
+          <button key={m.title} onClick={m.on} className={`flex w-full items-center gap-3 p-3.5 text-left active:bg-[#f4f7fc] ${i < more.length - 1 ? 'border-b border-[#f0f2f7]' : ''}`}>
             <m.icon size={18} color={C.sub} />
             <span className="flex-1 text-[14px]" style={{ color: C.ink }}>{m.title}</span>
             <ChevronRight size={16} color={C.faint} />

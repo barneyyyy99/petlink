@@ -16,6 +16,9 @@ type MobileUi = {
   phrases: string[]
   addPhrase: (p: string) => void
   removePhrase: (p: string) => void
+  /** 健康下钻详情主题 */
+  healthTopic: 'behavior' | 'motion' | 'rest'
+  setHealthTopic: (v: 'behavior' | 'motion' | 'rest') => void
 }
 
 export const useMobileUi = create<MobileUi>()(
@@ -30,6 +33,8 @@ export const useMobileUi = create<MobileUi>()(
       phrases: ['豆豆～', '过来', '好棒'],
       addPhrase: (p) => set((s) => (p.trim() && !s.phrases.includes(p.trim()) ? { phrases: [...s.phrases, p.trim()] } : {})),
       removePhrase: (p) => set((s) => ({ phrases: s.phrases.filter((x) => x !== p) })),
+      healthTopic: 'behavior',
+      setHealthTopic: (v) => set({ healthTopic: v }),
     }),
     { name: 'petlink-mobile-ui' },
   ),

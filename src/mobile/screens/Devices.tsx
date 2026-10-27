@@ -60,8 +60,8 @@ export function Devices({ go }: { go: (t: MTab) => void }) {
     { icon: Utensils, label: '投喂', on: () => setDeviceControlTarget({ deviceId: feeder?.id ?? '' }) },
   ]
   const shortcuts = [
-    { icon: Users, label: '家庭成员', on: () => openModal('auth') },
-    { icon: BookHeart, label: '宠物日记', on: () => go('health') },
+    { icon: Users, label: '家庭成员', on: () => openSub('family') },
+    { icon: BookHeart, label: '宠物日记', on: () => openSub('diary') },
     { icon: PawPrint, label: '毛茸茸好友', on: () => openModal('friends') },
     { icon: ClipboardList, label: '活动记录', on: () => toggleDrawer(true) },
   ]

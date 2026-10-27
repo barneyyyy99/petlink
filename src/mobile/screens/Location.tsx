@@ -69,7 +69,7 @@ export function Location() {
             )}
 
             <div className="rounded-[26px] bg-white p-2 shadow-[0_6px_20px_rgba(31,60,120,.07)]">
-              <HomeIso />
+              <HomeIso draggable />
               <div className="no-scrollbar -mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1">
                 {rooms.map((r) => {
                   const active = r.id === pet.roomId
@@ -78,7 +78,7 @@ export function Location() {
               </div>
               <div className="flex items-center justify-between px-2 pb-1 pt-1 text-[11px]" style={{ color: C.sub }}>
                 <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: C.primary }} />{pet.name}当前位置</span>
-                <span>点房间让{pet.name}过去 · 点设备看控制</span>
+                <span>拖动{pet.name}或点房间更新位置</span>
               </div>
             </div>
 

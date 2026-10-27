@@ -4,9 +4,8 @@ import { Smile, Star, Bookmark, Heart, Settings, Battery, ArrowLeftRight, Sparkl
 import { C, G } from '@/mobile/theme'
 import { Ring } from '@/mobile/MobileShell'
 import { useNav } from '@/mobile/nav'
-import type { MTab } from '@/mobile/MobileApp'
 
-export function Duxiaodu({ go }: { go: (t: MTab) => void }) {
+export function Duxiaodu() {
   const pet = useStore((s) => s.pet)
   const pets = useStore((s) => s.pets)
   const setActivePet = useStore((s) => s.setActivePet)
@@ -24,8 +23,8 @@ export function Duxiaodu({ go }: { go: (t: MTab) => void }) {
   const floaters = [
     { icon: Smile, label: '情绪', on: () => { setCompanionEnabled(!companionEnabled); toast('success', companionEnabled ? '已关闭情绪陪伴' : '已开启情绪陪伴') } },
     { icon: Star, label: '装扮', on: () => openSub('persona') },
-    { icon: Bookmark, label: '日记', on: () => go('health') },
-    { icon: Heart, label: '成长', on: () => go('health') },
+    { icon: Bookmark, label: '日记', on: () => openSub('diary') },
+    { icon: Heart, label: '成长', on: () => openSub('growth') },
   ]
 
   return (

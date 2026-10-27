@@ -18,6 +18,12 @@ import { WidgetScreen } from '@/mobile/screens/sub/Widget'
 import { AccountScreen } from '@/mobile/screens/sub/Account'
 import { SuperDuScreen } from '@/mobile/screens/sub/SuperDu'
 import { FenceScreen } from '@/mobile/screens/sub/Fence'
+import { GrowthScreen } from '@/mobile/screens/sub/Growth'
+import { HealthDetailScreen } from '@/mobile/screens/sub/HealthDetail'
+import { AlbumScreen } from '@/mobile/screens/sub/Album'
+import { CareScreen } from '@/mobile/screens/sub/Care'
+import { FamilyScreen } from '@/mobile/screens/sub/Family'
+import { DiaryScreen } from '@/mobile/screens/sub/Diary'
 import { VoiceCallSheet } from '@/mobile/VoiceCallSheet'
 import { PetBubble } from '@/mobile/PetBubble'
 import { useMobileUi } from '@/mobile/useMobileUi'
@@ -72,6 +78,12 @@ export function MobileApp() {
       case 'account': return <AccountScreen />
       case 'superdu': return <SuperDuScreen />
       case 'fence': return <FenceScreen />
+      case 'growth': return <GrowthScreen />
+      case 'healthDetail': return <HealthDetailScreen />
+      case 'album': return <AlbumScreen />
+      case 'care': return <CareScreen />
+      case 'family': return <FamilyScreen />
+      case 'diary': return <DiaryScreen />
     }
   }
 
@@ -84,7 +96,7 @@ export function MobileApp() {
           <main className="no-scrollbar flex-1 overflow-y-auto overflow-x-hidden px-4 pb-28 pt-1">
             {tab === 'devices' && <Devices go={setTab} />}
             {tab === 'location' && <Location />}
-            {tab === 'duxiaodu' && <Duxiaodu go={setTab} />}
+            {tab === 'duxiaodu' && <Duxiaodu />}
             {tab === 'health' && <Health />}
             {tab === 'mine' && <Mine />}
           </main>

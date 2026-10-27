@@ -3,6 +3,8 @@ import { useStore } from '@/store/useStore'
 import { Activity, BookHeart, Brain, Flame, Footprints, Moon } from 'lucide-react'
 import { C, G } from '@/mobile/theme'
 import { Card, SectionHeader } from '@/mobile/MobileShell'
+import { useNav } from '@/mobile/nav'
+import { useMobileUi } from '@/mobile/useMobileUi'
 
 type Range = '日' | '周' | '月'
 const QUALITY = [
@@ -37,10 +39,12 @@ const H_BY: Record<Range, {
 export function Health() {
   const pet = useStore((s) => s.pet)
   const toast = useStore((s) => s.toast)
-  const toggleDrawer = useStore((s) => s.toggleDrawer)
   const openModal = useStore((s) => s.openModal)
   const [range, setRange] = useState<Range>('日')
   const h = H_BY[range]
+  const { openSub } = useNav()
+  const setHealthTopic = useMobileUi((s) => s.setHealthTopic)
+  const openTopic = (t: 'behavior' | 'motion' | 'rest') => { setHealthTopic(t); openSub('healthDetail') }
 
   const summary = [
     { icon: Activity, title: '运动', sub: h.moveSub, on: () => openModal('action') },
@@ -98,7 +102,7 @@ export function Health() {
       </Card>
 
       {/* 行为数据 */}
-      <SectionHeader title="行为数据" extra={`${h.behExtra} ›`} onExtra={() => toggleDrawer(true)} />
+      <SectionHeader title="行为数据" extra={`${h.behExtra} ›`} onExtra={() => openTopic('behavior')} />
       <Card>
         <div className="grid grid-cols-5 gap-1.5 text-center">
           {h.beh.map((b) => (
@@ -111,7 +115,7 @@ export function Health() {
       </Card>
 
       {/* 运动数据 */}
-      <SectionHeader title="运动数据" extra={`${h.moveExtra} ›`} onExtra={() => openModal('action')} />
+      <SectionHeader title="运动数据" extra={`${h.moveExtra} ›`} onExtra={() => openTopic('motion')} />
       <Card>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-3 text-white" style={{ background: 'linear-gradient(135deg,#FF8A5B,#F2574C)' }}>
@@ -133,7 +137,7 @@ export function Health() {
       </Card>
 
       {/* 休息数据 */}
-      <SectionHeader title="休息数据" extra={`${h.restExtra} ›`} onExtra={() => toggleDrawer(true)} />
+      <SectionHeader title="休息数据" extra={`${h.restExtra} ›`} onExtra={() => openTopic('rest')} />
       <Card>
         <div className="mb-3 flex items-center gap-2"><Moon size={16} color={C.primary} /><b className="text-[13px]" style={{ color: C.ink }}>睡眠与休息</b></div>
         <div className="grid grid-cols-3 gap-2 text-center">
